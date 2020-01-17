@@ -6,7 +6,7 @@ Existing CRIPSR gRNA design tools target protein-coding regions within genomic l
 
 # Version
 
-CRISPR-TAPE version 1.0.0
+General_function version 1.0.0
 
 # Quick Start 
 
