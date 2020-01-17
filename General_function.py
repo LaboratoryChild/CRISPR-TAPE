@@ -220,6 +220,7 @@ def General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen):
             gRNA = entry[4:] #If TTTN remove initial 4 bases
         return gRNA
 
+###############################################################################################################
     cds = cds.replace("\n", "")
     cds = cds.replace("\r", "") #Remove new lines
     cds = cds.replace(" ", "") #Remove spaces
@@ -279,8 +280,6 @@ def General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen):
       exit()
       
     p = translate(dna) #Translate the CDS identified by the tool into an amino acid sequence using the dictionary of codons.
-    
-###############################################################################################################
 
     #           GENERAL FUNCTIONS
 
