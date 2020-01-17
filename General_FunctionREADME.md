@@ -16,17 +16,17 @@ CRISPR-TAPE version 1.0.0
   
 # Inputs
 
-aa = String of the short letter code of all amino acids to be targeted
+• aa = String of the short letter code of all amino acids to be targeted
 
-motif = String of the protospacer adjacent motif (PAM) sequence
+• motif = String of the protospacer adjacent motif (PAM) sequence
 
-cds = String of the coding sequence for the protein of interest
+• cds = String of the coding sequence for the protein of interest
 
-hundredup = String of the 5' UTR or additional upstream sequences if desired
+• hundredup = String of the 5' UTR or additional upstream sequences if desired
 
-hundreddown = String of the 3' UTR or additional downstream sequences if desired
+• hundreddown = String of the 3' UTR or additional downstream sequences if desired
 
-orgen = String of the forward genomic loci sequence of the organism of interest
+• orgen = String of the forward genomic loci sequence of the organism of interest
  
 # Output 
 
@@ -116,19 +116,19 @@ CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE al
             gRNA_list_reverse.append(entry)
             
 # Troubleshooting
-•	All inputs are case sensitive and it is important to adhere to the requirements specified adjacent to each entry box
+• All inputs are case sensitive and it is important to adhere to the requirements specified adjacent to each entry box
 
-•	gRNAs will be incorrect if exonic bases are not capitalised and intronic/untranslated bases are not lowercase in the genomic loci input
+• gRNAs will be incorrect if exonic bases are not capitalised and intronic/untranslated bases are not lowercase in the genomic loci input
 
-•	The programme currently only recognises “A”, “T”, “C” and “G” bases and will filter out any other characters
+• The programme currently only recognises “A”, “T”, “C” and “G” bases and will filter out any other characters
 
-•	If no protospacer adjacent motif is specified, the programme will not run and no guide RNAs will be outputted
+• If no protospacer adjacent motif is specified, the programme will not run and no guide RNAs will be outputted
 
-•	The programme will stop running and a pop-up prompt will open if the inputted protein coding sequence and the exon sequences from the inputted genomic loci do not match
+• The programme will stop running and a pop-up prompt will open if the inputted protein coding sequence and the exon sequences from the inputted genomic loci do not match
 
-•	Off target counts will display as “-1” if gRNAs are not found within the forward or reverse complement of the organism genome. If this occurs, ensure the genomic loci and genome originate from the same organism
+• Off target counts will display as “-1” if gRNAs are not found within the forward or reverse complement of the organism genome. If this occurs, ensure the genomic loci and genome originate from the same organism
 
-•	If some amino acids are missing from the output, this is because they cannot be target using the current information. If this is the case, add more upstream and downstream bases to the input requesting 100 bases upstream and downstream of the genomic loci
+• If some amino acids are missing from the output, this is because they cannot be target using the current information. If this is the case, add more upstream and downstream bases to the input requesting 100 bases upstream and downstream of the genomic loci
 
 # Authors
 
