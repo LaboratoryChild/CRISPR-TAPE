@@ -194,7 +194,9 @@ def Specific_function(spec_amino, distance, motif, cds, dna, hundredup, hundredd
                 else:
                     gRNA = entry[4:]
         return gRNA
-    
+        
+###############################################################################################################
+
     cds = cds.replace("\n", "")
     cds = cds.replace("\r", "") #Remove new lines
     cds = cds.replace(" ", "") #Remove spaces
@@ -255,7 +257,6 @@ def Specific_function(spec_amino, distance, motif, cds, dna, hundredup, hundredd
       
     p = translate(dna) #Translate the CDS identified by the tool into an amino acid sequence using the dictionary of codons.
     
-###############################################################################################################
 
     #           GENERAL FUNCTIONS
     # Create a 2D array for each amino acid and the respective codon and position of each base
