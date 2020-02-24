@@ -7,6 +7,9 @@ Existing CRIPSR gRNA design tools target protein-coding regions within genomic l
 # Version
 CRISPR-TAPE version 1.0.0
 
+# LICENSE 
+MIT License
+
 # Quick Start 
 
     pip install CRISPR-TAPE
