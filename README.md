@@ -259,4 +259,4 @@ CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE al
 CRISPR-TAPE was developed by Daniel Anderson, Henry Benns and Dr Matthew Child
 
 # Copyright 
-Copyright (c) [2020] [The Child Lab]
+Copyright (c) 2020 The Child Lab
