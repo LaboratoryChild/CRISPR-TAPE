@@ -13,13 +13,13 @@ CRISPR-TAPE version 1.0.0
 
 General_function:
 
-    from CRISPR-TAPE import General_function
+    from CRISPR_TAPE import General_function
   
     gRNAs = General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen)
 
 Specific_function:
 
-    from CRISPR-TAPE import Specific_function
+    from CRISPR_TAPE import Specific_function
         
     gRNAs = Specific_function(spec_amino, distance, motif, cds, dna, hundredup, hundreddown, orgen)
     
