@@ -42,6 +42,7 @@ General_function:
 • orgen = String of the forward genomic loci sequence of the organism of interest
 
 
+
 Specific_function:
 
 • spec_amino = Integer residue position of the residue in the protein sequence
