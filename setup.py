@@ -7,8 +7,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="CRISPR-TAPE", # Replace with your own username
-    version="1.0.2",
+    name="CRISPR-TAPE",
+    version="1.0.3",
     author="Daniel Anderson",
     author_email="danielanderson1@hotmail.com",
     license= "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License",
