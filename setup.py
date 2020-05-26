@@ -10,7 +10,7 @@ setuptools.setup(
     name="CRISPR-TAPE",
     version="1.0.3",
     author="Daniel Anderson",
-    author_email="danielanderson1@hotmail.com",
+    author_email="",
     license= "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License",
     description="A protein-centric CRISPR gRNA design tool for TArgeted Protein Engineering",
     long_description="Existing CRIPSR gRNA design tools target protein-coding regions within genomic loci and non-specifically target the entire input region of DNA. Current tools fail to consider proteomic-based applications, so CRISPR-TAPE has been developed to reduce the substantial time burden associated with manual curation of gRNA libraries and empower the proteomics community." ,
