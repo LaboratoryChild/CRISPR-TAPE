@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Thu Sep 19 00:32:03 2019
-
-@author: danielanderson
+Identify guides surrounding a specific residue position within a maximum distance range 
 """
 
 import pandas as pd
