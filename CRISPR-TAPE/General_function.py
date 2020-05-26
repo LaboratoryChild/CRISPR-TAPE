@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Thu Sep 19 00:28:49 2019
-
-@author: danielanderson
+Identify gRNAs immediately adjacent to all amino acids of a specific type
 """
 
 import numpy as np
