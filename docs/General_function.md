@@ -26,9 +26,6 @@ General_function:
 
 A dataframe of 5' and 3' gRNAs immediately upstream and downstream of the specified amino acids and some basic properties including the off target count, G/C content and presence of a leading G seqence and polyA sequence. 
 
-# Technologies 
-The CRISPR-TAPE python scripts are compatible with Python 3.6 and later versions. Outside of the standard library, it makes use of the following packages: numpy version 1.18.0, pandas version 0.25.3.
-
 # General_function PAM-Specific Functions
 CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE allows for easy incorporation of additional PAM sequences by modifying the code shown below:
    
