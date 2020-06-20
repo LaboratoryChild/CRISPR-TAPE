@@ -6,142 +6,230 @@ Identify gRNAs immediately adjacent to all amino acids of a specific type
 import numpy as np
 import pandas as pd
 import re
-from shared_functions import reverse_complement, baseposition, translate, closest_downstream, closest_upstream
-from pam_functions import PAMposition, YGposition, TTTNposition
-
-def charposition(string, char):
-    pos = [] #list to store positions for each amino acid in the amino acid sequence
-    for n in range(len(string)):
-        if string[n] == char:
-            pos.append(n + 1)
-    return pos
-
-def position_finder(x):
-    mask = np.where(gRNA['Position'] == x) #Determine which guide RNA sequence corresponds to the position of the closest guide RNA
-    indexes = mask[0]
-    target = gRNA['gRNA Sequence'][indexes]
-    try:
-        target = target.iloc[0]
-    except:
-        target = 0
-    return target
-
-def strand_finder(x): #Determine on which strand the closest guide RNA identified is located
-    mask = np.where(gRNA['Position'] == x)
-    indexes = mask[0]
-    target = gRNA['Strand'][indexes]
-    try:
-        target = target.iloc[0]
-    except:
-        target = 0
-    return target
-
-#Calculate GC percentage
-
-def analyse_text(text): #Analyse the G/C content of the guide RNA as a percentage.
-    count = 0
-    letter_count = 0
-    try:
-        for char in text:
-            if char.isalpha(): #Count the length of the guide RNA
-                count += 1
-            if char == "C" or char =="G":
-                letter_count += 1 #Count the number of Gs or Cs in the guide RNA
-        perc = float(letter_count)/float(count) * 100 #Calculate a percentage of Gs and Cs in the length of the guide RNA
-        perc = round(perc, 2) #Round to two decimal places
-    except:
-        perc = 0
-    return perc
-
-def intconverter(entry): #Convert the entry into an integer
-    integer = int(entry)
-    return integer
-
-def notes(string, content): #Return key information on the generated guide RNA
-    polyt = ''
-    for n in range(len(string)-3):
-        if string[n:n + 4] == 'TTTT': #Check for four thymines in a row
-            polyt = 'PolyT present. '
-    if string[0] != 'G': #Check the guide RNA starts with a 'G' at the most 5' position
-        polyt += 'No leading G. '
-    if content >= 75:
-        polyt += 'G/C content over 75%. ' #Check if the G/C content of the guide is more than or equal to 75%
-    return polyt
-
-def off_target(search):
-    count = 0
-    fwcount = orgen.count(search) #Count the occurrence of the guide in the organism genome
-    rvcount = revgen.count(search) #Count the occurrence of the guide in the reverse complement of the organism genome
-    count = fwcount + rvcount - 1 #Add the counts in both genomes together and subtract 1 to measure only off targets
-    return count
-
-def upstream_real_distance(strand, base_distance): #Determine the actual distance between the 5' base of the amino acid and the upstream guide RNA cut site
-    distance = 0
-    if strand == "forward":
-        distance = base_distance + 1
-    if strand == "reverse":
-        distance = base_distance + 1
-    return distance
-
-def downstream_real_distance(strand, base_distance): #Determine the actual distance between the 3' base of the amino acid and the downstream guide RNA cut site
-    distance = 0
-    if strand == "forward":
-        distance = base_distance
-    if strand == "reverse":
-        distance = base_distance
-    return distance
-
-def context(search): #Return the amino acid being target (marked by '*') and the amino acids immediately surrounding it
-    x = int(search) - 1
-    if x == 0:
-        surrounding= aas[x] + '*' + aas[x+1] + aas[x+2] + aas[x+3] +aas[x+4]
-    else:
-        if x == 1:
-            surrounding= aas[x-1] + aas[x] + '*' + aas[x+1] + aas[x+2] +aas[x+3]
-        else:
-            if x == len(aas) - 2:
-                surrounding= aas[x-4] + aas[x-3] +aas[x-2] + aas[x-1] + aas[x] + '*'
-            else:
-                if x == len(aas) - 3:
-                    surrounding= aas[x-3] + aas[x-2] +aas[x-1] + aas[x] + '*' + aas[x+1]
-                else:
-                    surrounding= aas[x-2] + aas[x-1] +aas[x] + '*' + aas[x+1] + aas[x+2]
-    return surrounding
-
-################################ MODIFY IF ADDITTIONAL PAMS ARE TO BE INCLUDED ################################
-
-def pamcolumn(entry): #Add a column to the guide dataframe specifying the pam adjacent to the guide RNA generated.
-    pam = ''
-    if motif == 'NGG' or motif == 'YG': #PAMs at 3' of the guide RNA
-        if entry == fiveprime or entry == threeprime:
-            pass #Pass this function if there are no guides outputted
-        else:
-            pam = entry[20:]
-    if motif == 'TTTN': #PAM at the 5' of the guide RNA
-        if entry == fiveprime or entry == threeprime:
-            pass #Pass this function if there are no guides outputted
-        else:
-                pam = entry[0:4]
-    return pam
-    
-def pamidentifier(entry): #Remove the PAM from the guide RNA column
-    gRNA = ''
-    if motif == 'NGG' or motif == 'YG':
-        if entry == fiveprime or entry == threeprime:
-            gRNA = entry #Do not apply function if there are no guides.
-        else:
-            gRNA = entry[0:20]
-    if motif == 'TTTN':
-        if entry == fiveprime or entry == threeprime:
-            gRNA = entry #Do not apply function if there are no guides.
-        else:
-            gRNA = entry[4:]
-    return gRNA
-
-###############################################################################################################
 
 def General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen):
+    
+    def reverse_complement(dna):
+        complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
+        return ''.join([complement[base] for base in dna[::-1]])
 
+    psn = []
+    def baseposition(code): #Get the position of each base within the genomic loci and output to a list
+        for  n in range(len(code)):
+            i = [n + 1]
+            psn.append(i)
+        return psn
+
+    def translate(seq): #Translate the exon sequence of the gene into its respective amino acid codes using a dictionary
+        table = {
+            'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
+            'ACA':'T', 'ACC':'T', 'ACG':'T', 'ACT':'T',
+            'AAC':'N', 'AAT':'N', 'AAA':'K', 'AAG':'K',
+            'AGC':'S', 'AGT':'S', 'AGA':'R', 'AGG':'R',
+            'CTA':'L', 'CTC':'L', 'CTG':'L', 'CTT':'L',
+            'CCA':'P', 'CCC':'P', 'CCG':'P', 'CCT':'P',
+            'CAC':'H', 'CAT':'H', 'CAA':'Q', 'CAG':'Q',
+            'CGA':'R', 'CGC':'R', 'CGG':'R', 'CGT':'R',
+            'GTA':'V', 'GTC':'V', 'GTG':'V', 'GTT':'V',
+            'GCA':'A', 'GCC':'A', 'GCG':'A', 'GCT':'A',
+            'GAC':'D', 'GAT':'D', 'GAA':'E', 'GAG':'E',
+            'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G',
+            'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S',
+            'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
+            'TAC':'Y', 'TAT':'Y', 'TAA':'-', 'TAG':'-',
+            'TGC':'C', 'TGT':'C', 'TGA':'-', 'TGG':'W',
+        }
+        protein =""
+        if len(seq)%3 == 0:
+            for i in range(0, len(seq), 3):
+                codon = seq[i:i + 3] #Defining a codon as 3 bases
+                protein+= table[codon] #Translate the codon into an amino acid based on the dictionary and append this to the protein sequence
+        return protein
+        
+    def charposition(string, char):
+        pos = [] #list to store positions for each amino acid in the amino acid sequence
+        for n in range(len(string)):
+            if string[n] == char:
+                pos.append(n + 1)
+        return pos
+
+    ################################ ADD FUNCTION IF ADDITTIONAL PAMS ARE TO BE INCLUDED ################################
+
+    # get index position of all PAMs within the genomic loci
+    def PAMposition(string): #Identify the position of NGGs within the genomic loci
+        pos = [] #Empty list to store identified gRNAs
+        for n in range(len(string) - 1):
+            if string[n] == 'G' and string[n+1] == 'G' and n-21 >= 0: #If two Gs in a row and Gs not at the start of the genomic loci
+                pos.append(n-4) #Append the position of the base 5' of the cut site
+        return pos
+
+    def YGposition(string): #Identify the position of YGs in the genomic loci (Y is a pyrimidine- C or T)
+        pos = []
+        for n in range(len(string) - 1):
+            if string[n] == 'C' or string[n] == 'T': #If a C or T is followed by G
+                if string[n + 1] == 'G':
+                    pos.append(n-9)  #Append the position of the base 5' of the cut site
+        return pos
+
+    def TTTNposition(string): #Identify the position of TTTN motifs in the genomic loci
+        pos = []
+        for n in range(len(string) - 7):
+            if string[n] == 'T' and string[n+1] == 'T' and string[n+2] == 'T': #If 3 Ts in a row
+                if string[n+3] == 'A' or string[n+3] == 'C' or string[n+3] == 'G': #If 4th base is not T
+                    pos.append(n + 23) #Append the position of the base 5' of the cut site
+        return pos
+
+    ###############################################################################################################
+
+    #Determine closest downstream gRNA to specified aa
+               
+    def closest_downstream(posa): #Determine which guide RNA is closest downstream of the 3' base coding for the amino acid.
+        small = 1000000000
+        position = 0
+        for x in gRNA.iloc[:, 1]:
+            posg = x
+            diff = int(posa) - int(posg)
+            if diff > -2 and diff < small: #iterate through the list of guide RNAs and their positions to determine the cut site resistance that is the smallest distance away from the 3' base of the amino acid.
+                small = diff
+                position = posg
+        return position #Returns the cut site position of the closest 3' guide  RNA.
+
+    #Determine closest upstream gRNA to specified aa
+
+    def closest_upstream(posa): #Determine which guide RNA is closest upstream of the 5' base coding for the amino acid.
+        small = 1000000000
+        position = 0
+        for x in gRNA.iloc[:, 1]:
+            posg = x
+            diff = int(posg) - int(posa)
+            if diff >-2 and diff < small: #iterate through the list of guide RNAs and their positions to determine the cut site resistance that is the smallest distance away from the 3' base of the amino acid.
+                small = diff
+                position = posg
+        return position #Returns the cut site position of the closest 3' guide  RNA.
+
+    def position_finder(x):
+        mask = np.where(gRNA['Position'] == x) #Determine which guide RNA sequence corresponds to the position of the closest guide RNA
+        indexes = mask[0]
+        target = gRNA['gRNA Sequence'][indexes]
+        try:
+            target = target.iloc[0]
+        except:
+            target = 0
+        return target
+
+    def strand_finder(x): #Determine on which strand the closest guide RNA identified is located
+        mask = np.where(gRNA['Position'] == x)
+        indexes = mask[0]
+        target = gRNA['Strand'][indexes]
+        try:
+            target = target.iloc[0]
+        except:
+            target = 0
+        return target
+
+    #Calculate GC percentage
+
+    def analyse_text(text): #Analyse the G/C content of the guide RNA as a percentage.
+        count = 0
+        letter_count = 0
+        try:
+            for char in text:
+                if char.isalpha(): #Count the length of the guide RNA
+                    count += 1
+                if char == "C" or char =="G":
+                    letter_count += 1 #Count the number of Gs or Cs in the guide RNA
+            perc = float(letter_count)/float(count) * 100 #Calculate a percentage of Gs and Cs in the length of the guide RNA
+            perc = round(perc, 2) #Round to two decimal places
+        except:
+            perc = 0
+        return perc
+
+    def intconverter(entry): #Convert the entry into an integer
+        integer = int(entry)
+        return integer
+
+    def notes(string, content): #Return key information on the generated guide RNA
+        polyt = ''
+        for n in range(len(string)-3):
+            if string[n:n + 4] == 'TTTT': #Check for four thymines in a row
+                polyt = 'PolyT present. '
+        if string[0] != 'G': #Check the guide RNA starts with a 'G' at the most 5' position
+            polyt += 'No leading G. '
+        if content >= 75:
+            polyt += 'G/C content over 75%. ' #Check if the G/C content of the guide is more than or equal to 75%
+        return polyt
+
+    def off_target(search):
+        count = 0
+        fwcount = orgen.count(search) #Count the occurrence of the guide in the organism genome
+        rvcount = revgen.count(search) #Count the occurrence of the guide in the reverse complement of the organism genome
+        count = fwcount + rvcount - 1 #Add the counts in both genomes together and subtract 1 to measure only off targets
+        return count
+
+    def upstream_real_distance(strand, base_distance): #Determine the actual distance between the 5' base of the amino acid and the upstream guide RNA cut site
+        distance = 0
+        if strand == "forward":
+            distance = base_distance + 1
+        if strand == "reverse":
+            distance = base_distance + 1
+        return distance
+
+    def downstream_real_distance(strand, base_distance): #Determine the actual distance between the 3' base of the amino acid and the downstream guide RNA cut site
+        distance = 0
+        if strand == "forward":
+            distance = base_distance
+        if strand == "reverse":
+            distance = base_distance
+        return distance
+
+    def context(search): #Return the amino acid being target (marked by '*') and the amino acids immediately surrounding it
+        x = int(search) - 1
+        if x == 0:
+            surrounding= aas[x] + '*' + aas[x+1] + aas[x+2] + aas[x+3] +aas[x+4]
+        else:
+            if x == 1:
+                surrounding= aas[x-1] + aas[x] + '*' + aas[x+1] + aas[x+2] +aas[x+3]
+            else:
+                if x == len(aas) - 2:
+                    surrounding= aas[x-4] + aas[x-3] +aas[x-2] + aas[x-1] + aas[x] + '*'
+                else:
+                    if x == len(aas) - 3:
+                        surrounding= aas[x-3] + aas[x-2] +aas[x-1] + aas[x] + '*' + aas[x+1]
+                    else:
+                        surrounding= aas[x-2] + aas[x-1] +aas[x] + '*' + aas[x+1] + aas[x+2]
+        return surrounding
+
+    ################################ MODIFY IF ADDITTIONAL PAMS ARE TO BE INCLUDED ################################
+
+    def pamcolumn(entry): #Add a column to the guide dataframe specifying the pam adjacent to the guide RNA generated.
+        pam = ''
+        if motif == 'NGG' or motif == 'YG': #PAMs at 3' of the guide RNA
+            if entry == fiveprime or entry == threeprime:
+                pass #Pass this function if there are no guides outputted
+            else:
+                pam = entry[20:]
+        if motif == 'TTTN': #PAM at the 5' of the guide RNA
+            if entry == fiveprime or entry == threeprime:
+                pass #Pass this function if there are no guides outputted
+            else:
+                    pam = entry[0:4]
+        return pam
+        
+    def pamidentifier(entry): #Remove the PAM from the guide RNA column
+        gRNA = ''
+        if motif == 'NGG' or motif == 'YG':
+            if entry == fiveprime or entry == threeprime:
+                gRNA = entry #Do not apply function if there are no guides.
+            else:
+                gRNA = entry[0:20]
+        if motif == 'TTTN':
+            if entry == fiveprime or entry == threeprime:
+                gRNA = entry #Do not apply function if there are no guides.
+            else:
+                gRNA = entry[4:]
+        return gRNA
+
+    ###############################################################################################################
     cds = cds.replace("\n", "")
     cds = cds.replace("\r", "") #Remove new lines
     cds = cds.replace(" ", "") #Remove spaces
@@ -171,8 +259,7 @@ def General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen):
     epos = list(cds)#List of all the bases in the genomic loci
     epospos = pd.DataFrame(epos) #Convert the base list to a dataframe
     epospos = epospos.rename(columns={0: "Base"}) #Rename column to Base
-    
-    psn = []
+                          
     baseposition(cds) #Get the position of each base in the genomic loci
 
     epospos['Position'] = psn #Append the base position to the dataframe
@@ -189,7 +276,10 @@ def General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen):
     pos2 = list(pos2["Position"])
     pos3 = list(pos3["Position"])
 
-    dna = dna.replace("\n", "").replace("\r", "").replace(" ", "").upper()
+    dna = dna.replace("\n", "")
+    dna = dna.replace("\r", "")
+    dna = dna.replace(" ", "") #Remove new lines and spcaes from the inputted CDS
+    dna = dna.upper()
 
     # Confirm concatenated exon = gene CDS
 
@@ -211,7 +301,7 @@ def General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen):
     else:
         print ('The amino acid ', aa,' is not present in this sequence.') #Print this string if the amino acid is not present in the amino acid sequence
         
-    # Create an array for each amino acid and the respective codon and position of each base
+    # Create a 2D array for each amino acid and the respective codon and position of each base
 
     start = 0
     end = 3
@@ -230,9 +320,39 @@ def General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen):
     ################################ ADD ADDITIONAL FUNCTION IF NEW PAMS ARE TO BE INCLUDED. ################################
     # These functions check for PAMs in the inputted genomic loci and its reverse complement.
     #They generate lists of all the potential guides within the genomic loci and a list of all guides on the reverse complement.
-    
-    pos, gRNA_list = PAMposition(cds_edited, motif)#Identify PAMs in the inputted genomic loci
-    pos_reversed, gRNA_list_reverse = PAMposition(cds_reverse, motif)#Identify PAMs in the reversed genomic loci
+
+    gRNA_list= []#Empty list for gRNAs
+    gRNA_list_reverse= []#Empty list for gRNAs
+
+    if motif == "NGG":
+        pos = PAMposition(cds_edited)#Identify PAMs in the inputted genomic loci
+        pos_reversed = PAMposition(cds_reverse)#Identify PAMs in the reversed genomic loci
+        for x in pos:
+            entry = cds_edited[x-17:x+6]#Return bases surrounding the cut site
+            gRNA_list.append(entry)
+        for x in pos_reversed:
+            entry = cds_reverse[x-17:x+6]#Return bases surrounding the cut site
+            gRNA_list_reverse.append(entry)
+            
+    if motif == 'YG':
+        pos = YGposition(cds_edited)#Identify PAMs in the inputted genomic loci
+        pos_reversed = YGposition(cds_reverse)#Identify PAMs in the reversed genomic loci
+        for x in pos:
+            entry = cds_edited[x-11:x+11]#Return bases surrounding the cut site
+            gRNA_list.append(entry)
+        for x in pos_reversed:
+            entry = cds_reverse[x-11:x+11]#Return bases surrounding the cut site
+            gRNA_list_reverse.append(entry)
+            
+    if motif == 'TTTN':
+        pos = TTTNposition(cds_edited)#Identify PAMs in the inputted genomic loci
+        pos_reversed = TTTNposition(cds_reverse)#Identify PAMs in the reversed genomic loci
+        for x in pos:
+            entry = cds_edited[x - 23:x + 8]#Return bases surrounding the cut site
+            gRNA_list.append(entry)
+        for x in pos_reversed:
+            entry = cds_reverse[x - 23:x + 8]#Return bases surrounding the cut site
+            gRNA_list_reverse.append(entry)
         
     ###############################################################################################################
     
@@ -278,7 +398,8 @@ def General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen):
     guides["5' Base"] = base1 #New row in the dataframe for the position of the most 5' base in the amino acid codon
     guides["3' Base"] = base3 #New row in the dataframe for the position of the most 3' base in the amino acid codon
 
-    guides["5' gRNA Base Position"] = guides["5' Base"].apply(closest_downstream) #Determine the closest guide RNA cut site to the 5' base of the amino acid codo
+    guides["5' gRNA Base Position"] = guides["5' Base"].apply(closest_downstream) #Determine the closest guide RNA cut site to the 5' base of the amino acid codon
+
     guides["3' gRNA Base Position"] = guides["3' Base"].apply(closest_upstream) #Determine the closest guide RNA cut site to the3' base of the amino acid codon
 
     guides["5' gRNA Sequence"] = guides["5' gRNA Base Position"].apply(position_finder) #Determine the guide RNA sequence corresponding to the guide RNA position determined by the closest_upstream function
@@ -314,10 +435,16 @@ def General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen):
     guides["5' Notes"] = guides.apply(lambda row: notes(row["5' gRNA Sequence"], row["5' gRNA G/C Content (%)"]), axis=1) #Output notes of key 5' guide RNA characterstics to a new column
     guides["3' Notes"] = guides.apply(lambda row: notes(row["3' gRNA Sequence"], row["3' gRNA G/C Content (%)"]), axis=1) #Output notes of key 3' guide RNA characterstics to a new column
 
+    del guides["5' Base"] #Delete the column specifying the 5' base position of the amino acid codon
+    del guides["3' Base"] #Delete the column specifying the 3' base position of the amino acid codon
+        
     guides["Distance of 5' Cut Site from Amino Acid (bp)"] = guides.apply(lambda row: upstream_real_distance(row["5' gRNA Strand"], row["Distance of 5' Cut Site from Amino Acid (bp)"]), axis=1) #Adjust the 5' guide RNA distance to account for strand
     guides["Distance of 3' Cut Site from Amino Acid (bp)"] = guides.apply(lambda row: downstream_real_distance(row["3' gRNA Strand"], row["Distance of 3' Cut Site from Amino Acid (bp)"]), axis=1) #Adjust the 3' guide RNA distance to account for strand
 
     guides["Context"] = guides["Amino Acid Position"].apply(context) #Generate new column  of the targeted amino acid and its surrounding amino acids
+
+    del guides["5' gRNA Base Position"] #Delete the column specifying the 5' guide RNA cut site position
+    del guides["3' gRNA Base Position"] #Delete the column specifying the 3' guide RNA cut site position
 
     guides[' '] = '' #Empty column in dataframe
      
