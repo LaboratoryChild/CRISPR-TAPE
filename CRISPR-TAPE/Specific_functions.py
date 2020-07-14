@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Jul 11 13:36:39 2020
-
-@author: danielanderson
+Identify guides surrounding a specific residue position within a maximum distance range 
 """
 
 import pandas as pd
@@ -119,20 +117,3 @@ def Specific_function(spec_amino, distance, motif, dna, cds, hundredup, hundredd
     guides = guides[['Distance from Amino Acid (bp)', 'gRNA Sequence', 'PAM', 'Strand', 'G/C Content (%)', 'Off Target Count', 'Notes']] #Reorganise the guide RNA dataframe
     
     return guides
-
-import time
-
-with open("INSERT_ORGANISM_GENOME_HERE.txt", "r") as f:
-    orgen = f.read()
-
-with open("Gene_CDS.txt", "r") as g:
-    cds = g.read()
-
-with open("Genomic_loci.txt", "r") as h:
-    dna = h.read()  
-
-s = time.time()
-old_guides = Specific_function(2552, 50, "NGG", dna, cds, "", "", orgen)
-e = time.time()
-t1 = str(e-s) + " seconds"
-print(t1)
