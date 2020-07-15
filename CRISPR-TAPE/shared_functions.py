@@ -45,7 +45,7 @@ def clean_inputs(loci, coding_sequence, organism_genome, hundredup, hundreddown)
     
     return loci_exon, loci, loci_edited, coding_sequence, organism_genome
 
-def PAMposition(string, motif): #Identify the position of NGGs within the genomic loci
+def PAMposition(string, motif):
     """ get index position of all PAMs within the genomic loci """
     
     position = [] #Empty list to store identified gRNAs
@@ -86,7 +86,10 @@ def PAMposition(string, motif): #Identify the position of NGGs within the genomi
                     position.append(n-23) #Append cut site
                     entry.append(string[n-30:n+1])
                     strand.append("reverse")
-                    
+    
+    else:
+        raise ValueError("This PAM is not supported")
+        
     return position, entry, strand
 
 def get_codon_index(dna, cds):
