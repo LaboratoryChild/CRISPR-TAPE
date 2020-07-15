@@ -200,20 +200,3 @@ def General_function(aa, motif, dna, cds, hundredup, hundreddown, orgen):
     guides.columns = ["Amino Acid Position", "Adjacent amino acids", '                        ', "gRNA Sequence 5' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count", '                        ', "gRNA Sequence 3' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count"] #Rename guide dataframe columns for output
     
     return guides
-
-with open("INSERT_ORGANISM_GENOME_HERE.txt", "r") as f:
-    orgen = f.read()
-
-with open("Gene_CDS.txt", "r") as g:
-    cds = g.read()
-
-with open("Genomic_loci.txt", "r") as h:
-    dna = h.read()  
-
-import time
-
-s = time.time()
-new_guides = General_function("M", "NGG", dna, cds, "", "", orgen)
-e = time.time()
-t1 = str(e-s) + " seconds"
-print(t1)
