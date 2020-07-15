@@ -79,12 +79,7 @@ def get_count(fw, rv, counter):
     for key, value in counter.items():
         if fw == key or rv == key:
             count += int(value)
-    return count
-
-
-
-#def gRNA_base(start_aa, stop_aa, protein_dict):
-    
+    return count    
     
 def General_function(aa, motif, dna, cds, hundredup, hundreddown, orgen):
 
@@ -131,19 +126,7 @@ def General_function(aa, motif, dna, cds, hundredup, hundreddown, orgen):
     
     start_distances = np.subtract(guide_array,start_base_array[:,None])
     stop_distances = np.subtract(guide_array,stop_base_array[:,None])
-# =============================================================================
-#     elif len(aa)>1:
-#         first_base_array = np.array(first)
-#         first_distances = np.subtract(guide_array,first_base_array[:,None])
-#         first_distances = np.where(first_distances > 1, 2, first_distances)
-#         
-#         final_base_array = np.array(final)
-#         final_distances = np.subtract(guide_array,final_base_array[:,None])
-#         final_distances = np.where(first_distances < -1, -2, final_distances)
-#     else:
-#         raise ValueError("Invalid aa entry")
-# =============================================================================
-        
+
     upstream_sequences = []
     downstream_sequences = []
     
@@ -178,30 +161,6 @@ def General_function(aa, motif, dna, cds, hundredup, hundreddown, orgen):
             downstream_sequences.append({"Position": 0, "Sequence" : gRNA['full gRNA Sequence'][0], "Distance": x[0], "Strand": gRNA['Strand'][0], "G/C Content (%)": gRNA["G/C Content (%)"][0]})
         else:
             raise AttributeError("No guide RNAs identified in sequence")
-    
-# =============================================================================
-#     for x in stop_distances:
-#         index = ''  
-#         for y in range(len(x)-1):
-#             if x[y]<=0 and x[y+1]>0:
-#                 index = y
-#                 up_index = y
-#                 down_index = y+1
-#                 continue       
-#         if not index == '':
-#             upstream_sequences.append({"Position": up_index, "Sequence": gRNA['full gRNA Sequence'][up_index], "Distance": x[up_index], "Strand": gRNA['Strand'][up_index], "G/C Content (%)": gRNA["G/C Content (%)"][up_index]})
-#             downstream_sequences.append({"Position": down_index, "Sequence": gRNA['full gRNA Sequence'][down_index], "Distance": x[down_index], "Strand": gRNA['Strand'][down_index], "G/C Content (%)": gRNA["G/C Content (%)"][down_index]})
-#         elif index == '' and x[len(x)-1]<=0:
-#             upstream_sequences.append({"Position": len(x)-1, "Sequence": gRNA['full gRNA Sequence'][len(x)-1], "Distance": x[len(x)-1], "Strand": gRNA['Strand'][len(x)-1], "G/C Content (%)": gRNA["G/C Content (%)"][len(x)-1]})
-#             downstream_sequences.append({"Position": "", "Sequence": "No 3' guide could be identified", "Distance": "", "Strand": "", "G/C Content (%)": 0})
-#         elif index == '' and x[len(x)-1]>0:
-#             upstream_sequences.append({"Position": "", "Sequence" : "No 5' guide could be identified", "Distance": "", "Strand": "", "G/C Content (%)": 0})
-#             downstream_sequences.append({"Position": 0, "Sequence" : gRNA['full gRNA Sequence'][0], "Distance": x[0], "Strand": gRNA['Strand'][0], "G/C Content (%)": gRNA["G/C Content (%)"][0]})
-#         else:
-#             raise AttributeError("No guide RNAs identified in sequence")
-#     
-#     
-# =============================================================================
     
     guides = pd.DataFrame(amino_position, columns= ['Amino Acid Position']) 
     guides["Context"] = guides.apply(lambda row: context(row["Amino Acid Position"], amino_acids), axis = 1)     
