@@ -11,21 +11,35 @@ from collections import Counter
 
 from shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, correct_distance
 
-def context(search, aas): #Return the amino acid being target (marked by '*') and the amino acids immediately surrounding it
+def context(search, aas, motif): #Return the amino acid being target (marked by '*') and the amino acids immediately surrounding it
     x = int(search)
-    if x == 0:
-        surrounding= aas[x] + '*' + aas[x+1] + aas[x+2] + aas[x+3] +aas[x+4]
-    else:
-        if x == 1:
-            surrounding= aas[x-1] + aas[x] + '*' + aas[x+1] + aas[x+2] +aas[x+3]
+    if len(motif) == 1:
+        if x == 0:
+            surrounding= aas[x] + '*' + aas[x+1] + aas[x+2] + aas[x+3] +aas[x+4]
         else:
-            if x == len(aas) - 2:
-                surrounding= aas[x-4] + aas[x-3] +aas[x-2] + aas[x-1] + aas[x] + '*'
+            if x == 1:
+                surrounding= aas[x-1] + aas[x] + '*' + aas[x+1] + aas[x+2] +aas[x+3]
             else:
-                if x == len(aas) - 3:
-                    surrounding= aas[x-3] + aas[x-2] +aas[x-1] + aas[x] + '*' + aas[x+1]
+                if x == len(aas) - 2:
+                    surrounding= aas[x-4] + aas[x-3] +aas[x-2] + aas[x-1] + aas[x] + '*'
                 else:
-                    surrounding= aas[x-2] + aas[x-1] +aas[x] + '*' + aas[x+1] + aas[x+2]
+                    if x == len(aas) - 3:
+                        surrounding= aas[x-3] + aas[x-2] +aas[x-1] + aas[x] + '*' + aas[x+1]
+                    else:
+                        surrounding= aas[x-2] + aas[x-1] +aas[x] + '*' + aas[x+1] + aas[x+2]
+    else:
+        amino_acids = "".join(aas)
+        length = len(motif)%2 
+
+        if not len(motif) == 2:
+            if length == 0:
+                half = int(len(motif)/2)
+            else:
+                half = int((len(motif)+1)/2)
+            surrounding = amino_acids[x - half + 1 : x + half]
+        else:
+            surrounding = amino_acids[x-1:x+1]
+
     return surrounding
 
 def get_gRNA_sequence(amino_pos, guide_dict):
@@ -83,26 +97,32 @@ def get_count(fw, rv, counter):
     
 def General_function(aa, motif, dna, cds, hundredup, hundreddown, orgen):
 
-    dna_exon, dna, dna_edited, cds, orgen = clean_inputs(dna, cds, orgen, hundredup, hundreddown)
+    dna_exon, dna, dna_edited, cds, orgen, path = clean_inputs(dna, cds, orgen, hundredup, hundreddown)
+
+    if len(aa) > 1:
+        mid_aa = aa[round((len(aa) + 1)/2)-1]
+    else:
+        mid_aa = aa
 
     if dna_exon == cds: #Confirm that the inputted CDS sequence matches the CDS identified by the tool. If not the programme stops running.
         print("Inputted CDS and concatenated exons match")
     else:
        print("INPUTTED CDS AND CONCATENATED EXONS DO NOT MATCH")
      
-    #if len(aa) == 1:
     protein_dict = get_codon_index(dna, cds)    
     amino_position = []
     amino_acids = []
     
     for key, value in protein_dict.items():
-        if value["Amino Acid"] == aa:
+        if value["Amino Acid"] == mid_aa:
             amino_position.append(key)
         amino_acids.append(value["Amino Acid"])
         
-    if len(amino_position) == 0:
-        raise AttributeError("The amino acid ", aa," is not present in this sequence.")   
-        
+    if len(amino_position) == 0 and len(aa) == 1:
+        raise AttributeError("The amino acid " + aa +" is not present in this sequence.")   
+    elif len(amino_position) == 0 and len(aa) > 1:
+        raise AttributeError("The motif " + aa + " is not present in this sequence.")
+
     print("Searching for guides...")
     
     guide_positons, gRNA_list, guide_strands = PAMposition(dna_edited, motif)#Identify guides in the inputted genomic loci
@@ -161,9 +181,14 @@ def General_function(aa, motif, dna, cds, hundredup, hundreddown, orgen):
             downstream_sequences.append({"Position": 0, "Sequence" : gRNA['full gRNA Sequence'][0], "Distance": x[0], "Strand": gRNA['Strand'][0], "G/C Content (%)": gRNA["G/C Content (%)"][0]})
         else:
             raise AttributeError("No guide RNAs identified in sequence")
-  
+    
     guides = pd.DataFrame(amino_position, columns= ['Amino Acid Position']) 
-    guides["Context"] = guides.apply(lambda row: context(row["Amino Acid Position"], amino_acids), axis = 1)     
+    guides["Context"] = guides.apply(lambda row: context(row["Amino Acid Position"], amino_acids, aa), axis = 1) 
+
+    if len(aa) > 1:
+        indexNames = guides[guides['Context'] != aa].index
+        guides.drop(indexNames , inplace=True)
+
     guides["Amino Acid Position"] = guides["Amino Acid Position"] + 1
     guides["5' gRNA Sequence"] = guides.apply(lambda row: get_gRNA_sequence(row.name, upstream_sequences), axis = 1)  
     guides["5' gRNA Sequence RC"] = guides["5' gRNA Sequence"].apply(reverse_complement)
@@ -177,8 +202,12 @@ def General_function(aa, motif, dna, cds, hundredup, hundreddown, orgen):
     guides["Distance of 3' Cut Site from Amino Acid (bp)"] = guides.apply(lambda row: correct_distance(row["Distance of 3' Cut Site from Amino Acid (bp)"], row["3' gRNA Strand"]), axis = 1)      
     guides["5' gRNA G/C Content (%)"] =  guides.apply(lambda row: get_gc(row.name, upstream_sequences), axis = 1)  
     guides["3' gRNA G/C Content (%)"] =  guides.apply(lambda row: get_gc(row.name, downstream_sequences), axis = 1)  
-    guides["5' Notes"] = guides.apply(lambda row: notes(row["5' gRNA Sequence"], row["5' gRNA G/C Content (%)"]), axis = 1)  
-    guides["3' Notes"] = guides.apply(lambda row: notes(row["3' gRNA Sequence"], row["3' gRNA G/C Content (%)"]), axis = 1)  
+    
+    try:
+        guides["5' Notes"] = guides.apply(lambda row: notes(row["5' gRNA Sequence"], row["5' gRNA G/C Content (%)"]), axis = 1)  
+        guides["3' Notes"] = guides.apply(lambda row: notes(row["3' gRNA Sequence"], row["3' gRNA G/C Content (%)"]), axis = 1)  
+    except:
+        raise AttributeError("No " + aa + " motifs identified in sequence")
 
     print("Counting off targets...")
     
@@ -197,6 +226,8 @@ def General_function(aa, motif, dna, cds, hundredup, hundreddown, orgen):
     guides[' '] = '' #Empty column in dataframe
      
     guides = guides[["Amino Acid Position", "Context", ' ', "5' gRNA Sequence", "5' PAM", "5' gRNA Strand", "5' gRNA G/C Content (%)", "Distance of 5' Cut Site from Amino Acid (bp)", "5' Notes", "5' gRNA Off Target Count", ' ', "3' gRNA Sequence", "3' PAM", "3' gRNA Strand", "3' gRNA G/C Content (%)", "Distance of 3' Cut Site from Amino Acid (bp)", "3' Notes", "3' gRNA Off Target Count"]] #Reorganise guide dataframe columns for output
-    guides.columns = ["Amino Acid Position", "Adjacent amino acids", '                        ', "gRNA Sequence 5' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count", '                        ', "gRNA Sequence 3' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count"] #Rename guide dataframe columns for output
-    
+    if len(aa) == 1:
+        guides.columns = ["Amino Acid Position", "Adjacent amino acids", '                        ', "gRNA Sequence 5' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count", '                        ', "gRNA Sequence 3' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count"] #Rename guide dataframe columns for output
+    else:
+        guides.columns = ["Amino Acid Position", "Targeted motif", '                        ', "gRNA Sequence 5' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count", '                        ', "gRNA Sequence 3' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count"] #Rename guide dataframe columns for output
     return guides

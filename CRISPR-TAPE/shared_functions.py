@@ -88,8 +88,7 @@ def PAMposition(string, motif):
                     strand.append("reverse")
     
     else:
-        raise ValueError("This PAM is not supported")
-        
+        raise ValueError("PAM not recognised")
     return position, entry, strand
 
 def get_codon_index(dna, cds):
