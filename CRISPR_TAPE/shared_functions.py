@@ -23,8 +23,8 @@ def translate(seq): #Translate the exon sequence of the gene into its respective
         'GGA':'G', 'GGC':'G', 'GGG':'G', 'GGT':'G',
         'TCA':'S', 'TCC':'S', 'TCG':'S', 'TCT':'S',
         'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
-        'TAC':'Y', 'TAT':'Y', 'TAA':'*', 'TAG':'*',
-        'TGC':'C', 'TGT':'C', 'TGA':'*', 'TGG':'W',
+        'TAC':'Y', 'TAT':'Y', 'TAA':'-', 'TAG':'-',
+        'TGC':'C', 'TGT':'C', 'TGA':'-', 'TGG':'W',
     }
     protein =""
     if len(seq)%3 == 0:
@@ -66,11 +66,11 @@ def PAMposition(string, motif):
                 
     elif motif == "YG":
         for n in tqdm(range(len(string) - 1)):
-            if string[n] == 'C' or string[n] == 'T' and string[n + 1] == 'G' and n-21 >= 0: #If a C or T is followed by G
+            if (string[n] == 'C' or string[n] == 'T') and string[n + 1] == 'G' and n-21 >= 0: #If a C or T is followed by G
                 position.append(n-9) #Append cut site
                 entry.append(string[n-21:n+2].upper())
                 strand.append("forward")
-            if string[n-1] == "C" and string[n+1] == "A" or string[n+1] == "G" and n+21 <= len(string):
+            if string[n-1] == "C" and (string[n+1] == "A" or string[n+1] == "G") and n+21 <= len(string):
                 position.append(n+9) #Append cut site
                 entry.append(string[n-1:n+22].upper())
                 strand.append("reverse")
@@ -139,9 +139,11 @@ def pamcolumn(entry, strand, reverse_entry, motif): #Add a column to the guide d
         else:
             guide = reverse_entry
         if motif == 'NGG' or motif == 'YG': #PAMs at 3' of the guide RNA
-                pam = guide[20:]
+            pam = guide[20:]
+        if motif == 'YG':
+            pam = guide[21:]
         if motif == 'TTTN': #PAM at the 5' of the guide RNA
-                  pam = guide[0:4]
+            pam = guide[0:4]
     else:
         pam = ""
     return pam

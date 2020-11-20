@@ -22,7 +22,7 @@ def context(search, aas, motif): #Return the amino acid being target (marked by 
             if x == 1:
                 surrounding= aas[x-1] + aas[x] + '*' + aas[x+1] + aas[x+2] +aas[x+3]
             else:
-                if x == len(aas) - 2:
+                if x == len(aas) - 2 or x == len(aas) - 1:
                     surrounding= aas[x-4] + aas[x-3] +aas[x-2] + aas[x-1] + aas[x] + '*'
                 else:
                     if x == len(aas) - 3:
