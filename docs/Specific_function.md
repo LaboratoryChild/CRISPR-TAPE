@@ -12,7 +12,7 @@ Specific_function:
 
 Specific_function:
 
-• spec_amino = Integer residue position of the residue in the protein sequence
+• spec_amino = Integer position of the residue in the protein sequence
 
 • distance = Integer distance of the maximum distance for gRNA identification
 
