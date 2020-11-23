@@ -97,7 +97,7 @@ def get_count(fw, rv, counter):
             count += int(value)
     return count    
     
-def General_function(aa, 
+def general_function(aa, 
                     motif, 
                     dna, 
                     cds, 
@@ -292,7 +292,7 @@ def main():
         genome = g.read()         
    
     # run function
-    guides = General_function(args.aa, 
+    guides = general_function(args.aa, 
                             args.motif, 
                             dna, 
                             cds, 

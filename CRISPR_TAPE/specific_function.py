@@ -24,7 +24,7 @@ def off_target(search, reverse_search, orgen):
          count = ""
      return count
 
-def Specific_function(spec_amino, 
+def specific_function(spec_amino, 
                     distance, 
                     motif, 
                     dna, 
@@ -180,7 +180,7 @@ def main():
         genome = g.read()         
    
     # run function
-    guides = Specific_function(args.spec_amino, 
+    guides = specific_function(args.spec_amino, 
                             args.distance,
                             args.motif, 
                             dna, 
