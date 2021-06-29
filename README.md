@@ -1,20 +1,20 @@
 # CRISPR-TAPE
 A protein-centric CRISPR gRNA design tool for TArgeted Protein Engineering
 
-# Motivation 
-Existing CRIPSR gRNA design tools target protein-coding regions within genomic loci and non-specifically target the entire input region of DNA. Current tools fail to consider proteomic-based applications, so CRISPR-TAPE has been developed to reduce the substantial time burden associated with manual curation of gRNA libraries and empower the proteomics community. 
+# Motivation
+Existing CRIPSR gRNA design tools target protein-coding regions within genomic loci and non-specifically target the entire input region of DNA. Current tools fail to consider proteomic-based applications, so CRISPR-TAPE has been developed to reduce the substantial time burden associated with manual curation of gRNA libraries and empower the proteomics community.
 
 # Version
 CRISPR-TAPE version 1.0.3
 
-# LICENSE 
+# LICENSE
 Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License
 
-# Quick Start 
+# Quick Start
 
     pip install CRISPR-TAPE
 
-# Technologies 
+# Technologies
 The CRISPR-TAPE python scripts are compatible with Python 3.6 and later versions. Outside of the standard library, it makes use of the following packages: numpy version 1.18.0, pandas version 0.25.3.
 
 # Troubleshooting
@@ -35,5 +35,5 @@ The CRISPR-TAPE python scripts are compatible with Python 3.6 and later versions
 # Authors
 CRISPR-TAPE was developed by Daniel Anderson, Henry Benns and Dr Matthew Child
 
-# Copyright 
+# Copyright
 Copyright (c) 2020 The Child Lab
