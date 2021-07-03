@@ -26,11 +26,11 @@ def translate(seq): #Translate the exon sequence of the gene into its respective
         'TAC':'Y', 'TAT':'Y', 'TAA':'-', 'TAG':'-',
         'TGC':'C', 'TGT':'C', 'TGA':'-', 'TGG':'W',
     }
-    protein =""
+    protein = ""
     if len(seq)%3 == 0:
         for i in range(0, len(seq), 3):
             codon = seq[i:i + 3] #Defining a codon as 3 bases
-            protein+= table[codon] #Translate the codon into an amino acid based on the dictionary and append this to the protein sequence
+            protein += table[codon] #Translate the codon into an amino acid based on the dictionary and append this to the protein sequence
     return protein
 
 def clean_inputs(loci, coding_sequence, organism_genome, hundredup, hundreddown):

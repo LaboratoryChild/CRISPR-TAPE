@@ -142,7 +142,7 @@ def get_options():
 
     # target options
     tGroup = parser.add_argument_group('Targeting options')
-    tGroup.add_argument('--spec-amino', required=True, type = int, help='Amino acid short letter code')
+    tGroup.add_argument('--spec-amino', required=True, type = int, help='Amino acid/residue position')
     tGroup.add_argument('--motif', choices=['NGG', 'YG', 'TTTN'], default='NGG', type=str, help='Cas9 motif')
     tGroup.add_argument('--distance', default=10000, type=int, help='Maximum distance from target (base pairs)')
 

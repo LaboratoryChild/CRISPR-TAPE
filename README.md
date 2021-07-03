@@ -11,8 +11,28 @@ CRISPR-TAPE version 1.0.3
 Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License
 
 # Quick Start
-
-    pip install CRISPR-TAPE
+To install CRISPR-TAPE from source, run:
+```
+git clone -b devel https://github.com/LaboratoryChild/CRISPR-TAPE.git
+```
+To install the CRISPR-TAPE dependencies, run:
+```
+cd CRISPR-TAPE
+pip install -r requirements.txt
+```
+CRISPSR-TAPE may be run through the GUI or run from the command line. To use the CRISPR-TAPE GUI, run:
+```
+python tape_interface-runner.py
+```
+To run the CRISPR-TAPE specific targeting function through the command line:
+```
+python tape_specific-runner.py --loci <genomic loci file> --cds <coding sequence file> --genome <organism genomic sequence file> --spec-amino <residue position> --motif <protospacer adjacent motif> --distance <maximum distance of cut site from residue> --output <output filename> --up <additional bases upstream of loci> --down <additional bases downstream of loci>
+```
+To run the CRISPR-TAPE general targeting function through the command line:
+```
+python tape_general-runner.py --loci <genomic loci file> --cds <coding sequence file> --genome <organism genomic sequence file> --aa <amino acide short letter code> --motif <protospacer adjacent motif> --output <output filename> --up <additional bases upstream of loci> --down <additional bases downstream of loci>
+```
+For more detailed documentation, see the [docs](https://github.com/LaboratoryChild/CRISPR-TAPE/tree/devel/docs)
 
 # Technologies
 The CRISPR-TAPE python scripts are compatible with Python 3.6 and later versions. Outside of the standard library, it makes use of the following packages: numpy version 1.18.0, pandas version 0.25.3.
