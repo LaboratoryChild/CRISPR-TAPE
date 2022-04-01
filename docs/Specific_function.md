@@ -1,6 +1,6 @@
 # Quick Start
 
-    pip install CRISPR-TAPE
+    pip3 install CRISPR-TAPE
 
 Specific_function:
 

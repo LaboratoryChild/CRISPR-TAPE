@@ -1,6 +1,6 @@
 # Quick Start
 
-    pip install CRISPR-TAPE
+    pip3 install CRISPR-TAPE
 
 General_function:
 
@@ -25,6 +25,10 @@ General_function:
 # Output
 
 A dataframe of 5' and 3' gRNAs immediately upstream and downstream of the specified amino acids and some basic properties including the off target count, G/C content and presence of a leading G seqence and polyA sequence.
+
+# Targeting multiple amino acids
+
+CRISPR-TAPE 2.0 allows users to generate guide RNAs that target within multi-amino acid motifs e.g. "MLK".
 
 # General_function PAM-Specific Functions
 CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE allows for easy incorporation of additional PAM sequences by modifying the code shown below:
