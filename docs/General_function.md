@@ -1,13 +1,13 @@
-# Quick Start 
+# Quick Start
 
-    pip install CRISPR-TAPE
+    pip3 install CRISPR-TAPE
 
 General_function:
 
     from CRISPR_TAPE import General_function
-  
+
     gRNAs = General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen)
-    
+
 # Inputs
 
 • aa = String of the short letter code of all amino acids to be targeted
@@ -22,13 +22,17 @@ General_function:
 
 • orgen = String of the forward genomic loci sequence of the organism of interest
 
-# Output 
+# Output
 
-A dataframe of 5' and 3' gRNAs immediately upstream and downstream of the specified amino acids and some basic properties including the off target count, G/C content and presence of a leading G seqence and polyA sequence. 
+A dataframe of 5' and 3' gRNAs immediately upstream and downstream of the specified amino acids and some basic properties including the off target count, G/C content and presence of a leading G seqence and polyA sequence.
+
+# Targeting multiple amino acids
+
+CRISPR-TAPE 2.0 allows users to generate guide RNAs that target within multi-amino acid motifs e.g. "MLK".
 
 # General_function PAM-Specific Functions
 CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE allows for easy incorporation of additional PAM sequences by modifying the code shown below:
-   
+
     # get index position of all PAMs within the genomic loci
     def PAMposition(string): #Identify the position of NGGs within the genomic loci
         pos = [] #Empty list to store identified gRNAs
@@ -36,7 +40,7 @@ CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE al
             if string[n] == 'G' and string[n+1] == 'G' and n-21 >= 0: #If two Gs in a row and Gs not at the start of the genomic loci
                 pos.append(n-4) #Append the position of the base 5' of the cut site
         return pos
-    
+
     def YGposition(string): #Identify the position of YGs in the genomic loci (Y is a pyrimidine- C or T)
         pos = []
         for n in range(len(string) - 1):
@@ -44,7 +48,7 @@ CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE al
                 if string[n + 1] == 'G':
                     pos.append(n-9)  #Append the position of the base 5' of the cut site
         return pos
-    
+
     def TTTNposition(string): #Identify the position of TTTN motifs in the genomic loci
         pos = []
         for n in range(len(string) - 7):
@@ -67,7 +71,7 @@ CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE al
         if motif == 'TTTN':
             gRNA = entry[4:] #If TTTN remove initial 4 bases
         return gRNA
-    
+
     if motif == "NGG":
         pos = PAMposition(cds_edited)#Identify PAMs in the inputted genomic loci
         pos_reversed = PAMposition(cds_reverse)#Identify PAMs in the reversed genomic loci
@@ -79,7 +83,7 @@ CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE al
         for x in pos_reversed:
             entry = cds_reverse[x-17:x+6]#Return bases surrounding the cut site
             gRNA_list_reverse.append(entry)
-            
+
     if motif == 'YG':
         pos = YGposition(cds_edited)#Identify PAMs in the inputted genomic loci
         pos_reversed = YGposition(cds_reverse)#Identify PAMs in the reversed genomic loci
@@ -91,7 +95,7 @@ CRISPR-TAPE is an open source python programme. The modularity of CRISPR-TAPE al
         for x in pos_reversed:
             entry = cds_reverse[x-11:x+11]#Return bases surrounding the cut site
             gRNA_list_reverse.append(entry)
-            
+
     if motif == 'TTTN':
         pos = TTTNposition(cds_edited)#Identify PAMs in the inputted genomic loci
         pos_reversed = TTTNposition(cds_reverse)#Identify PAMs in the reversed genomic loci

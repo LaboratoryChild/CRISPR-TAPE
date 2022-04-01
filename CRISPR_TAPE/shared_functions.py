@@ -2,7 +2,7 @@
 """
 Functions shared by specific and general functions
 """
-import re 
+import re
 import pandas as pd
 from tqdm import tqdm
 import sys
@@ -26,16 +26,16 @@ def translate(seq): #Translate the exon sequence of the gene into its respective
         'TAC':'Y', 'TAT':'Y', 'TAA':'-', 'TAG':'-',
         'TGC':'C', 'TGT':'C', 'TGA':'-', 'TGG':'W',
     }
-    protein =""
+    protein = ""
     if len(seq)%3 == 0:
         for i in range(0, len(seq), 3):
             codon = seq[i:i + 3] #Defining a codon as 3 bases
-            protein+= table[codon] #Translate the codon into an amino acid based on the dictionary and append this to the protein sequence
+            protein += table[codon] #Translate the codon into an amino acid based on the dictionary and append this to the protein sequence
     return protein
 
 def clean_inputs(loci, coding_sequence, organism_genome, hundredup, hundreddown):
     """ clean and reformat user inputs """
-    
+
     remove_lower = lambda text: re.sub('[a-z]', '', text) #Remove any characters that aren't a letter
     loci_exon = remove_lower(loci).replace(" ", "").replace("\n", "").replace("\r", "")  #Remove any lower case characters. These correspond to intron sequences so the output is the exon sequence of the gene.
     loci = hundredup.lower() + loci + hundreddown.lower() #Append the 100 bases up and downstream to the genomic loci
@@ -43,12 +43,12 @@ def clean_inputs(loci, coding_sequence, organism_genome, hundredup, hundreddown)
     loci_edited = loci.upper()
     organism_genome = re.sub(r'[^ACTG]', '', organism_genome) #Remove any characters that are not ACTG
     coding_sequence = coding_sequence.replace("\n", "").replace("\r", "").replace(" ", "").upper()
-    
+
     return loci_exon, loci, loci_edited, coding_sequence, organism_genome
 
 def PAMposition(string, motif):
     """ get index position of all PAMs within the genomic loci """
-    
+
     position = [] #Empty list to store identified gRNAs
     entry = []
     strand = []
@@ -63,7 +63,7 @@ def PAMposition(string, motif):
                 position.append(n+5) #Append cut site
                 entry.append(string[n-1:n+22].upper())
                 strand.append("reverse")
-                
+
     elif motif == "YG":
         for n in tqdm(range(len(string) - 1)):
             if (string[n] == 'C' or string[n] == 'T') and string[n + 1] == 'G' and n-21 >= 0: #If a C or T is followed by G
@@ -74,7 +74,7 @@ def PAMposition(string, motif):
                 position.append(n+9) #Append cut site
                 entry.append(string[n-1:n+22].upper())
                 strand.append("reverse")
-                
+
     elif motif == "TTTN":
         for n in tqdm(range(len(string) - 7)):
             if string[n] == 'T' and string[n+1] == 'T' and string[n+2] == 'T': #If 3 Ts in a row
@@ -87,22 +87,22 @@ def PAMposition(string, motif):
                     position.append(n-23) #Append cut site
                     entry.append(string[n-30:n+1])
                     strand.append("reverse")
-    
+
     else:
         raise ValueError("PAM not recognised")
     return position, entry, strand
 
 def get_codon_index(dna, cds):
-    
+
     Base_df = pd.DataFrame(list(dna), columns = ["Base"]) #List of all the bases in the genomic loci
     Base_df["Position"] = Base_df.index
     Base_df = Base_df[Base_df['Base'].str.istitle()].reset_index(drop=True) #Remove lowercase bases so dataframe only codes for exon
-    
+
     pos1 = Base_df[Base_df.index % 3 == 0].reset_index(drop=True) #Generate a list of every third base from the first base
     pos2 = Base_df[Base_df.index % 3 == 1].reset_index(drop=True) #Generate a list of every third base from the second base
     pos3 = Base_df[Base_df.index % 3 == 2].reset_index(drop=True) #Generate a list of every third base from the third base
     aas = list(translate(cds))
-    
+
     protein_dict = {}
     for aa in range(len(aas)):
         protein_dict.update({aa: {"Amino Acid": aas[aa], "base_1": (pos1["Position"][aa], pos1["Base"][aa]), "base_2": (pos2["Position"][aa], pos2["Base"][aa]), "base_3": (pos3["Position"][aa], pos3["Base"][aa])}})
@@ -120,7 +120,7 @@ def analyse_text(text): #Analyse the G/C content of the guide RNA as a percentag
     perc = float(letter_count)/float(count) * 100 #Calculate a percentage of Gs and Cs in the length of the guide RNA
     perc = round(perc, 2) #Round to two decimal places
     return perc
- 
+
 def notes(string, content): #Return key information on the generated guide RNA
     polyt = ''
     for n in range(len(string)-3):
@@ -171,4 +171,20 @@ def correct_distance(distance, strand):
     else:
         distance = distance
     return distance
-    
+
+def list_search(the_list, orgen):
+    the_count = []
+    the_set = set(the_list)
+    for x in tqdm(range(len(orgen))):
+        if orgen[x:x+23] in the_set:
+            the_count.append(orgen[x:x+23])
+        else:
+            pass
+    return the_count
+
+def get_count(fw, rv, counter):
+    count = -1
+    for key, value in counter.items():
+        if fw == key or rv == key:
+            count += int(value)
+    return count

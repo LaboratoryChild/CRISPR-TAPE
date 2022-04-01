@@ -6,7 +6,6 @@ Created on Thu Feb 13 19:08:09 2020
 @author: danielanderson
 """
 
-
 from Specific_function import Specific_function
 from General_function import General_function
 from tkinter import *
@@ -44,7 +43,7 @@ for x in range(len(data)):
         guides = Specific_function(spec_amino, distance, motif, cds, dna, hundredup, hundreddown, orgen)
     if spec_amino == '':
         guides = General_function(aa, motif, cds, dna, hundredup, hundreddown, orgen)
-    csvfilename = str(filename + ".csv") #Add '.csv' to the specified filename 
+    csvfilename = str(filename + ".csv") #Add '.csv' to the specified filename
     guides.to_csv(csvfilename, index=False)
 
 print("done")
