@@ -1,6 +1,8 @@
 # Testing
 /CRISPR_TAPE/__pycache__
 /test/test
+/test/test_genome.txt
 
-#general 
+#general
 /CRISPR_TAPE/.DS_Store
+INSERT_ORGANISM_GENOME_HERE.txt
