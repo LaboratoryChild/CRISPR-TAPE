@@ -21,12 +21,15 @@ cd CRISPR-TAPE
 python3 -m venv venv
 pip3 install -r requirements.txt
 ```
+
+## Executable
 To build the CRISPR-TAPE executable, run:
 ```
 python3 tape_build-runner.py
 ```
-The executable can be found in the generated ```dist``` directory.
+The executable can be found in the generated ```dist``` directory. The genome assembly file used to check for mismatches must be in the same directory as the executable.
 
+## Command line
 CRISPSR-TAPE may be run through the GUI or run from the command line. To use the CRISPR-TAPE GUI, run:
 ```
 python3 tape_interface-runner.py
