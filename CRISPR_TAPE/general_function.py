@@ -11,7 +11,7 @@ from collections import Counter
 import os
 import sys
 
-from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, correct_distance
+from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count
 
 def context(search, aas, motif): #Return the amino acid being target (marked by '*') and the amino acids immediately surrounding it
     x = int(search)
@@ -79,23 +79,6 @@ def get_gc(amino_pos, guide_dict):
         if x == amino_pos:
             guide_seq = guide_dict[x]['G/C Content (%)']
     return guide_seq
-
-def list_search(the_list, orgen):
-    the_count = []
-    the_set = set(the_list)
-    for x in tqdm(range(len(orgen))):
-        if orgen[x:x+23] in the_set:
-            the_count.append(orgen[x:x+23])
-        else:
-            pass
-    return the_count
-
-def get_count(fw, rv, counter):
-    count = -1
-    for key, value in counter.items():
-        if fw == key or rv == key:
-            count += int(value)
-    return count
 
 def general_function(aa,
                     motif,

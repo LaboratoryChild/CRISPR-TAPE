@@ -1,9 +1,13 @@
 from CRISPR_TAPE.general_function import general_function
 from CRISPR_TAPE.specific_function import specific_function
+import multiprocessing
+import os
 import sys
 from tkinter import *
 
-def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d): #Function to get the values of the entry boxes and open the run completed pop-up
+multiprocessing.freeze_support()
+
+def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d, gf): #Function to get the values of the entry boxes and open the run completed pop-up
     try:
         dna_seq = gen.get()
         dna_seq = str(dna_seq)
@@ -16,6 +20,7 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d): #Function to get the val
         coding_seq = str(coding_seq)
         filename = fn.get()
         filename = str(filename)
+        genome_file = gf.get()
         spec_amino = a.get()
         spec_amino = int(spec_amino)
         distance = d.get()
@@ -24,8 +29,8 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d): #Function to get the val
         else:
             distance = int(distance)
 
-        # import organism genome
-        with open("INSERT_ORGANISM_GENOME_HERE.txt", "r") as f:
+        current_dir = "/".join(os.path.dirname(os.path.realpath(__file__)).split("/")[:-3])
+        with open(os.path.join(current_dir, genome_file), "r") as f:
             orgen = f.read()
 
         guides = specific_function(spec_amino,
@@ -37,7 +42,7 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d): #Function to get the val
                             downutr,
                             orgen)
         csvfilename = str(filename + ".csv")
-        guides.to_csv(csvfilename, index=False)
+        guides.to_csv(os.path.join(current_dir, csvfilename), index=False)
 
         done = Tk()
         Label(done, text='Your guide RNAs have successfully been generated.', font='Helvetica 12').grid(row=1)
@@ -48,10 +53,12 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d): #Function to get the val
         done.focus_force()
         done.bind('<FocusIn>', OnFocusIn)
         done.mainloop()
-    except:
+    except Exception as e:
         general = Tk()
         Label(general, text='Guides have not been successfully generated.', font='Helvetica 12').grid(row=1)
         Label(general, text='Please check the toubleshooting section of the README file.', font='Helvetica 12').grid(row=2)
+        Label(general, text='Error is:', font='Helvetica 12').grid(row=3)
+        Label(general, text=e, font='Helvetica 12').grid(row=4)
         general.title("**ERROR**")
         general.lift()
         general.attributes('-topmost',True)
@@ -59,7 +66,7 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d): #Function to get the val
         general.bind('<FocusIn>', OnFocusIn)
         general.mainloop()
 
-def retrieve_gen(gen, hup, hdn, thepam, dn, fn, v): #Function to get the values of the entry boxes and open the run completed pop-up
+def retrieve_gen(gen, hup, hdn, thepam, dn, fn, v, gf): #Function to get the values of the entry boxes and open the run completed pop-up
     try:
         dna_seq = gen.get()
         dna_seq = str(dna_seq)
@@ -72,12 +79,13 @@ def retrieve_gen(gen, hup, hdn, thepam, dn, fn, v): #Function to get the values 
         coding_seq = str(coding_seq)
         filename = fn.get()
         filename = str(filename)
-        distance = 10000000
+        genome_file = gf.get()
         aa = v.get()
         aa = str(aa)
 
         # import organism genome
-        with open("INSERT_ORGANISM_GENOME_HERE.txt", "r") as f:
+        current_dir = "/".join(os.path.dirname(os.path.realpath(__file__)).split("/")[:-3])
+        with open(os.path.join(current_dir, genome_file), "r") as f:
             orgen = f.read()
 
         guides = general_function(aa,
@@ -88,7 +96,7 @@ def retrieve_gen(gen, hup, hdn, thepam, dn, fn, v): #Function to get the values 
                                 downutr,
                                 orgen)
         csvfilename = str(filename + ".csv")
-        guides.to_csv(csvfilename, index=False)
+        guides.to_csv(os.path.join(current_dir, csvfilename), index=False)
 
         done = Tk()
         Label(done, text='Your guide RNAs have successfully been generated.', font='Helvetica 12').grid(row=1)
@@ -99,10 +107,12 @@ def retrieve_gen(gen, hup, hdn, thepam, dn, fn, v): #Function to get the values 
         done.focus_force()
         done.bind('<FocusIn>', OnFocusIn)
         done.mainloop()
-    except:
+    except Exception as e:
         general = Tk()
         Label(general, text='Guides have not been successfully generated.', font='Helvetica 12').grid(row=1)
         Label(general, text='Please check the toubleshooting section of the README file.', font='Helvetica 12').grid(row=2)
+        Label(general, text='Error is:', font='Helvetica 12').grid(row=3)
+        Label(general, text=e, font='Helvetica 12').grid(row=4)
         general.title("**ERROR**")
         general.lift()
         general.attributes('-topmost',True)
@@ -147,55 +157,58 @@ def main():
 
     Label(self, text="").grid(row=3)
     Label(self, text="Name of guide output file (no spaces):" , font='Helvetica 12 bold').grid(row=4, sticky = W)
+    Label(self, text="Genome assembly file of the organism of interest:" , font='Helvetica 12 bold').grid(row=5, sticky = W)
     fn = StringVar()
     Entry(self, textvariable = fn).grid(row=4, column=1, sticky=W)
-    Label(self, text="Please input the genomic loci sequence of your protein here:", font='Helvetica 12 bold').grid(row=5, column = 0, sticky=W)
-    Label(self, text="(UTRs and introns lowercase, exons uppercase)", font='Helvetica 12').grid(row=6, column = 0, sticky=W)
-    Label(self, text="", font='Helvetica 12 bold').grid(row=7, column = 0, sticky=W)
+    gf = StringVar()
+    Entry(self, textvariable = gf).grid(row=5, column=1, sticky=W)
+    Label(self, text="Please input the genomic loci sequence of your protein here:", font='Helvetica 12 bold').grid(row=6, column = 0, sticky=W)
+    Label(self, text="(UTRs and introns lowercase, exons uppercase)", font='Helvetica 12').grid(row=7, column = 0, sticky=W)
+    Label(self, text="", font='Helvetica 12 bold').grid(row=8, column = 0, sticky=W)
     gen = StringVar()
-    Entry(self, textvariable = gen).grid(row=5, column=1, sticky=W)
-    Label(self, text="If your genomic loci does not include 5' and 3' UTRs:", font='Helvetica 12 bold').grid(row=8, sticky=W)
-    Label(self, text="Please input 5' UTR here:", font='Helvetica 12').grid(row=9, sticky=W)
-    Label(self, text="Please input 3' UTR here:", font='Helvetica 12').grid(row=10, sticky=W)
+    Entry(self, textvariable = gen).grid(row=6, column=1, sticky=W)
+    Label(self, text="If your genomic loci does not include 5' and 3' UTRs:", font='Helvetica 12 bold').grid(row=9, sticky=W)
+    Label(self, text="Please input 5' UTR here:", font='Helvetica 12').grid(row=10, sticky=W)
+    Label(self, text="Please input 3' UTR here:", font='Helvetica 12').grid(row=11, sticky=W)
     hup = StringVar()
     hdn = StringVar()
-    Entry(self, textvariable = hup).grid(row=9, column=1, sticky=W)
-    Entry(self, textvariable = hdn).grid(row=10, column=1, sticky=W)
+    Entry(self, textvariable = hup).grid(row=10, column=1, sticky=W)
+    Entry(self, textvariable = hdn).grid(row=11, column=1, sticky=W)
     hup.set(' ')
     hdn.set(' ')
     thepam = StringVar()
-    Label(self, text="").grid(row=11, sticky=W)
-    Label(self, text="Please input the coding sequence of your protein here (no UTRs):", font='Helvetica 12 bold').grid(row=12, sticky = W)
+    Label(self, text="").grid(row=12, sticky=W)
+    Label(self, text="Please input the coding sequence of your protein here (no UTRs):", font='Helvetica 12 bold').grid(row=13, sticky = W)
     dn = StringVar()
-    Entry(self, textvariable = dn).grid(row=12, column=1, sticky=W)
-    Label(self, text="").grid(row=13, sticky = W)
-    Label(self, text="Specify nuclease protospacer adjacent motif (PAM):", font='Helvetica 12 bold').grid(row=14, sticky=W)
-    Radiobutton(self, text="NGG", value="NGG", variable=thepam, font='Helvetica 12').grid(row=15, sticky=W)
-    Radiobutton(self, text="YG", value="YG", variable=thepam, font='Helvetica 12').grid(row=16, sticky=W)
-    Radiobutton(self, text="TTTN", value="TTTN", variable=thepam, font='Helvetica 12').grid(row=17, sticky=W)
-    Label(self, text="").grid(row=18, sticky = W)
-    Label(self, text="Now choose to target a specific amino acid or target all amino acids of one type:", font='Helvetica 12').grid(row=19, sticky=W)
-    Label(self, text="").grid(row=20, sticky = W)
+    Entry(self, textvariable = dn).grid(row=13, column=1, sticky=W)
+    Label(self, text="").grid(row=14, sticky = W)
+    Label(self, text="Specify nuclease protospacer adjacent motif (PAM):", font='Helvetica 12 bold').grid(row=15, sticky=W)
+    Radiobutton(self, text="NGG", value="NGG", variable=thepam, font='Helvetica 12').grid(row=16, sticky=W)
+    Radiobutton(self, text="YG", value="YG", variable=thepam, font='Helvetica 12').grid(row=17, sticky=W)
+    Radiobutton(self, text="TTTN", value="TTTN", variable=thepam, font='Helvetica 12').grid(row=18, sticky=W)
+    Label(self, text="").grid(row=19, sticky = W)
+    Label(self, text="Now choose to target a specific amino acid or target all amino acids of one type:", font='Helvetica 12').grid(row=20, sticky=W)
+    Label(self, text="").grid(row=21, sticky = W)
 
-    Label(self, text="OPTION 1: Target a specific amino acid (e.g. cysteine at position 106 = 106):", font='Helvetica 12 bold').grid(row=21, sticky = W)
+    Label(self, text="OPTION 1: Target a specific amino acid (e.g. cysteine at position 106 = 106):", font='Helvetica 12 bold').grid(row=22, sticky = W)
     a = IntVar()
-    Label(self, text="Input the residue position of this amino acid:", font='Helvetica 12').grid(row=22, sticky=W)
-    Entry(self, textvariable = a).grid(row=22, column=1, sticky=W)
+    Label(self, text="Input the residue position of this amino acid:", font='Helvetica 12').grid(row=23, sticky=W)
+    Entry(self, textvariable = a).grid(row=23, column=1, sticky=W)
     d = StringVar()
     d.set("")
-    Label(self, text="Please specify the maximum guide distance (in nucleotides) from the amino acid:", font='Helvetica 12').grid(row=23, sticky=W)
-    Entry(self, textvariable = d).grid(row=23, column=1, sticky=W)
+    Label(self, text="Please specify the maximum guide distance (in nucleotides) from the amino acid:", font='Helvetica 12').grid(row=24, sticky=W)
+    Entry(self, textvariable = d).grid(row=24, column=1, sticky=W)
 
-    Button(self, text="Run Option 1", command = lambda: retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d)).grid(row=24, column =1, sticky=W)
+    Button(self, text="Run Option 1", command = lambda: retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d, gf)).grid(row=25, column =1, sticky=W)
 
     v = StringVar()
-    Label(self, text="OPTION 2: Target all amino acids of a certain type (e.g. cysteine = C):", font='Helvetica 12 bold').grid(row = 25, sticky = W)
-    Label(self, text="Input a target amino acid single letter code or motif:", font='Helvetica 12').grid(row=26, sticky=W)
-    Entry(self, textvariable = v).grid(row=26, column=1, sticky=W)
-    Button(self, text="Run Option 2", command = lambda: retrieve_gen(gen, hup, hdn, thepam, dn, fn, v)).grid(row=27, column =1, sticky=W)
+    Label(self, text="OPTION 2: Target all amino acids of a certain type (e.g. cysteine = C):", font='Helvetica 12 bold').grid(row = 26, sticky = W)
+    Label(self, text="Input a target amino acid single letter code or motif:", font='Helvetica 12').grid(row=27, sticky=W)
+    Entry(self, textvariable = v).grid(row=27, column=1, sticky=W)
+    Button(self, text="Run Option 2", command = lambda: retrieve_gen(gen, hup, hdn, thepam, dn, fn, v, gf)).grid(row=28, column =1, sticky=W)
 
-    Label(self, text="").grid(row=29, column =1, sticky=W)
-    Button(self, text="RESET", command= lambda: reset(gen, hup, hdn, dn, fn, v, a, d)).grid(row=30, column =1, sticky=W)
+    Label(self, text="").grid(row=30, column =1, sticky=W)
+    Button(self, text="RESET", command= lambda: reset(gen, hup, hdn, dn, fn, v, a, d, gf)).grid(row=31, column =1, sticky=W)
     self.title("CRISPR-TAPE")
     self.lift()
     self.attributes('-topmost',True)

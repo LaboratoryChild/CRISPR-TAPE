@@ -18,19 +18,26 @@ git clone -b devel https://github.com/LaboratoryChild/CRISPR-TAPE.git
 To install the CRISPR-TAPE dependencies, run:
 ```
 cd CRISPR-TAPE
-pip install -r requirements.txt
+python3 -m venv venv
+pip3 install -r requirements.txt
 ```
+To build the CRISPR-TAPE executable, run:
+```
+python3 tape_build-runner.py
+```
+The executable can be found in the generated ```dist``` directory.
+
 CRISPSR-TAPE may be run through the GUI or run from the command line. To use the CRISPR-TAPE GUI, run:
 ```
-python tape_interface-runner.py
+python3 tape_interface-runner.py
 ```
 To run the CRISPR-TAPE specific targeting function through the command line:
 ```
-python tape_specific-runner.py --loci <genomic loci file> --cds <coding sequence file> --genome <organism genomic sequence file> --spec-amino <residue position> --motif <protospacer adjacent motif> --distance <maximum distance of cut site from residue> --output <output filename> --up <additional bases upstream of loci> --down <additional bases downstream of loci>
+python3 tape_specific-runner.py --loci <genomic loci file> --cds <coding sequence file> --genome <organism genomic sequence file> --spec-amino <residue position> --motif <protospacer adjacent motif> --distance <maximum distance of cut site from residue> --output <output filename> --up <additional bases upstream of loci> --down <additional bases downstream of loci>
 ```
 To run the CRISPR-TAPE general targeting function through the command line:
 ```
-python tape_general-runner.py --loci <genomic loci file> --cds <coding sequence file> --genome <organism genomic sequence file> --aa <amino acide short letter code> --motif <protospacer adjacent motif> --output <output filename> --up <additional bases upstream of loci> --down <additional bases downstream of loci>
+python3 tape_general-runner.py --loci <genomic loci file> --cds <coding sequence file> --genome <organism genomic sequence file> --aa <amino acide short letter code> --motif <protospacer adjacent motif> --output <output filename> --up <additional bases upstream of loci> --down <additional bases downstream of loci>
 ```
 For more detailed documentation, see the [docs](https://github.com/LaboratoryChild/CRISPR-TAPE/tree/devel/docs)
 

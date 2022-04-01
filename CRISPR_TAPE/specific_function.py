@@ -3,14 +3,14 @@
 """
 Identify guides surrounding a specific residue position within a maximum distance range
 """
-
+from collections import Counter
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import sys
 import os
 
-from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, correct_distance
+from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count
 
 def reverse_complement(dna):
     complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
@@ -122,7 +122,10 @@ def specific_function(spec_amino,
 
     guides = pd.concat([upperguides, amino_acid, downerguides])
     sys.stderr.write("\nCounting off target matches...\n")
-    guides['Off Target Count'] = guides.progress_apply(lambda row: off_target(row['full gRNA Sequence'], row["Reverse complement"], orgen), axis=1)
+    ls = list(guides['full gRNA Sequence'] + guides["Reverse complement"])
+    count_list = list_search(ls, orgen)
+    counter = Counter(count_list)
+    guides['Off Target Count'] = guides.progress_apply(lambda row: get_count(row["full gRNA Sequence"], row["Reverse complement"], counter), axis=1)
     guides = guides[['Distance from Amino Acid (bp)', 'gRNA Sequence', 'PAM', 'Strand', 'G/C Content (%)', 'Off Target Count', 'Notes']] #Reorganise the guide RNA dataframe
 
     return guides

@@ -171,3 +171,20 @@ def correct_distance(distance, strand):
     else:
         distance = distance
     return distance
+
+def list_search(the_list, orgen):
+    the_count = []
+    the_set = set(the_list)
+    for x in tqdm(range(len(orgen))):
+        if orgen[x:x+23] in the_set:
+            the_count.append(orgen[x:x+23])
+        else:
+            pass
+    return the_count
+
+def get_count(fw, rv, counter):
+    count = -1
+    for key, value in counter.items():
+        if fw == key or rv == key:
+            count += int(value)
+    return count
