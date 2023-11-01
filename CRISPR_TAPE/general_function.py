@@ -98,7 +98,7 @@ def general_function(aa,
     if dna_exon == cds: #Confirm that the inputted CDS sequence matches the CDS identified by the tool. If not the programme stops running.
         sys.stderr.write("\nInputted CDS and concatenated exons match\n")
     else:
-       sys.stderr.write("\nINPUTTED CDS AND CONCATENATED EXONS DO NOT MATCH\n")
+        sys.stderr.write("\nINPUTTED CDS AND CONCATENATED EXONS DO NOT MATCH\n")
 
     protein_dict = get_codon_index(dna, cds)
     amino_position = []
@@ -228,7 +228,7 @@ def get_options():
     import argparse
 
     parser = argparse.ArgumentParser(description='Target all amino acids of a specific type',
-                                     prog='CRISPR-TAPE_specific')
+                                    prog='CRISPR-TAPE_specific')
 
     # input options
     iGroup = parser.add_argument_group('Input files')

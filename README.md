@@ -5,7 +5,7 @@ A protein-centric CRISPR gRNA design tool for TArgeted Protein Engineering
 Existing CRIPSR gRNA design tools target protein-coding regions within genomic loci and non-specifically target the entire input region of DNA. Current tools fail to consider proteomic-based applications, so CRISPR-TAPE has been developed to reduce the substantial time burden associated with manual curation of gRNA libraries and empower the proteomics community.
 
 # Version
-CRISPR-TAPE version 2.0.0
+CRISPR-TAPE version 1.0.4
 
 # LICENSE
 Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License
