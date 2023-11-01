@@ -8,3 +8,4 @@ INSERT_ORGANISM_GENOME_HERE.txt
 venv
 build
 dist
+CRISPR-TAPE.spec
