@@ -29,30 +29,41 @@ def translate(seq): #Translate the exon sequence of the gene into its respective
     protein = ""
     if len(seq)%3 == 0:
         for i in range(0, len(seq), 3):
-            codon = seq[i:i + 3] #Defining a codon as 3 bases
-            protein += table[codon] #Translate the codon into an amino acid based on the dictionary and append this to the protein sequence
+            # Defining a codon as 3 bases
+            codon = seq[i:i + 3]
+            # Translate the codon into an amino acid based on the dictionary and append this to the protein sequence
+            protein += table[codon]
     return protein
 
-def clean_inputs(loci, coding_sequence, organism_genome, hundredup, hundreddown):
+def clean_inputs(loci,
+            coding_sequence,
+            organism_genome,
+            hundredup,
+            hundreddown):
     """ clean and reformat user inputs """
-
-    remove_lower = lambda text: re.sub('[a-z]', '', text) #Remove any characters that aren't a letter
-    loci_exon = remove_lower(loci).replace(" ", "").replace("\n", "").replace("\r", "")  #Remove any lower case characters. These correspond to intron sequences so the output is the exon sequence of the gene.
-    loci = hundredup.lower() + loci + hundreddown.lower() #Append the 100 bases up and downstream to the genomic loci
-    loci = loci.replace(" ", "").replace("\n", "").replace("\r", "") #Remove spaces
+    # Remove any characters that aren't a letter
+    remove_lower = lambda text: re.sub('[a-z]', '', text)
+    # Remove any lower case characters. These correspond to intron sequences so the output is the exon sequence of the gene.
+    loci_exon = remove_lower(loci).replace(" ", "").replace("\n", "").replace("\r", "")
+    # Append the 100 bases up and downstream to the genomic loci
+    loci = hundredup.lower() + loci + hundreddown.lower()
+    # Remove spaces
+    loci = loci.replace(" ", "").replace("\n", "").replace("\r", "")
+    # Uppercase the loci
     loci_edited = loci.upper()
-    organism_genome = re.sub(r'[^ACTG]', '', organism_genome) #Remove any characters that are not ACTG
+    # Remove any characters that are not ACTG
+    organism_genome = re.sub(r'[^ACTG]', '', organism_genome)
     coding_sequence = coding_sequence.replace("\n", "").replace("\r", "").replace(" ", "").upper()
 
     return loci_exon, loci, loci_edited, coding_sequence, organism_genome
 
 def PAMposition(string, motif):
     """ get index position of all PAMs within the genomic loci """
-
-    position = [] #Empty list to store identified gRNAs
+    # initialise lists to store gRNA information
+    position = []
     entry = []
     strand = []
-
+    # check what PAM we are looking for
     if motif == "NGG":
         for n in tqdm(range(len(string) - 1)):
             if string[n] == 'G' and string[n+1] == 'G' and n-21 >= 0: #If two Gs in a row and Gs not at the start of the genomic loci
@@ -63,7 +74,6 @@ def PAMposition(string, motif):
                 position.append(n+5) #Append cut site
                 entry.append(string[n-1:n+22].upper())
                 strand.append("reverse")
-
     elif motif == "YG":
         for n in tqdm(range(len(string) - 1)):
             if (string[n] == 'C' or string[n] == 'T') and string[n + 1] == 'G' and n-21 >= 0: #If a C or T is followed by G
@@ -74,7 +84,6 @@ def PAMposition(string, motif):
                 position.append(n+9) #Append cut site
                 entry.append(string[n-1:n+22].upper())
                 strand.append("reverse")
-
     elif motif == "TTTN":
         for n in tqdm(range(len(string) - 7)):
             if string[n] == 'T' and string[n+1] == 'T' and string[n+2] == 'T': #If 3 Ts in a row
@@ -87,7 +96,6 @@ def PAMposition(string, motif):
                     position.append(n-23) #Append cut site
                     entry.append(string[n-30:n+1])
                     strand.append("reverse")
-
     else:
         raise ValueError("PAM not recognised")
     return position, entry, strand
@@ -122,44 +130,55 @@ def analyse_text(text): #Analyse the G/C content of the guide RNA as a percentag
     return perc
 
 def notes(string, content): #Return key information on the generated guide RNA
-    polyt = ''
+    note = []
     for n in range(len(string)-3):
         if string[n:n + 4] == 'TTTT': #Check for four thymines in a row
-            polyt = 'PolyT present. '
+            note.append('PolyT present.')
     if string[0] != 'G': #Check the guide RNA starts with a 'G' at the most 5' position
-        polyt += 'No leading G. '
+        note.append('No leading G.')
     if content >= 75:
-        polyt += 'G/C content over 75%. ' #Check if the G/C content of the guide is more than or equal to 75%
-    return polyt
+        note.append('G/C content over 75%.') #Check if the G/C content of the guide is more than or equal to 75%
+    return " ".join(note)
 
 def pamcolumn(entry, strand, reverse_entry, motif): #Add a column to the guide dataframe specifying the pam adjacent to the guide RNA generated.
-    if not strand == "":
-        if strand == "forward":
-            guide = entry
-        else:
-            guide = reverse_entry
-        if motif == 'NGG' or motif == 'YG': #PAMs at 3' of the guide RNA
-            pam = guide[20:]
-        if motif == 'YG':
-            pam = guide[21:]
-        if motif == 'TTTN': #PAM at the 5' of the guide RNA
-            pam = guide[0:4]
+    # check that the gRNA is the correct length
+    if motif == "NGG" or motif == "YG":
+        assert len(entry) == 23, f"gRNA: {entry} is the wrong length"
+    # extract the PAM for this gRNA depending on the motif
+    assert not strand == ""
+    if strand == "forward":
+        guide = entry
     else:
-        pam = ""
+        guide = reverse_entry
+    # PAMs are at the 3' end of the guide
+    if motif == 'NGG' or motif == 'YG':
+        pam = guide[20:]
+    if motif == 'YG':
+        pam = guide[21:]
+    # PAMs are at the 5' end of the guide
+    if motif == 'TTTN':
+        pam = guide[0:4]
+    assert not pam == "", f"No {motif} was found in the guide: {entry}"
     return pam
 
-def remove_pam(entry, strand, reverse_entry, motif): #Remove the PAM from the guide RNA column
-    if not strand == "":
-        if strand == "forward":
-            guide = entry
-        else:
-            guide = reverse_entry
-        if motif == 'NGG' or motif == 'YG':
-                gRNA = guide[0:20]
-        if motif == 'TTTN':
-                gRNA = guide[4:]
+def remove_pam(entry, strand, reverse_entry, motif):
+    # Remove the PAM from the guide RNA column
+    assert not strand == ""
+    PAM_removed = False
+    if strand == "forward":
+        guide = entry
     else:
-        gRNA = entry
+        guide = reverse_entry
+    if motif == 'NGG' or motif == 'YG':
+        gRNA = guide[0:20]
+        PAM_removed = True
+    if motif == 'YG':
+        gRNA = guide[0:21]
+        PAM_removed = True
+    if motif == 'TTTN':
+        gRNA = guide[4:]
+        PAM_removed = True
+    assert PAM_removed, f"{motif} could not removed from {entry}"
     return gRNA
 
 def correct_distance(distance, strand):
@@ -172,19 +191,19 @@ def correct_distance(distance, strand):
         distance = distance
     return distance
 
-def list_search(the_list, orgen):
+def list_search(the_list, reference_genome):
     the_count = []
     the_set = set(the_list)
-    for x in tqdm(range(len(orgen))):
-        if orgen[x:x+23] in the_set:
-            the_count.append(orgen[x:x+23])
+    for x in tqdm(range(len(reference_genome))):
+        if reference_genome[x:x+23] in the_set:
+            the_count.append(reference_genome[x:x+23])
         else:
             pass
     return the_count
 
 def get_count(fw, rv, counter):
     count = -1
-    for key, value in counter.items():
+    for key in counter:
         if fw == key or rv == key:
-            count += int(value)
+            count += int(counter[key])
     return count

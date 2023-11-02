@@ -135,7 +135,7 @@ def get_options():
     import argparse
 
     parser = argparse.ArgumentParser(description='Target all amino acids of a specific type',
-                                     prog='CRISPR-TAPE_specific')
+                                    prog='CRISPR-TAPE_specific')
 
     # input options
     iGroup = parser.add_argument_group('Input files')
