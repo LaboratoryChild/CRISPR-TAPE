@@ -1,8 +1,8 @@
 import unittest
 import sys
-sys.path.insert(0, "CRISPR_TAPE")
+sys.path.insert(0, ".")
 
-from shared_functions import translate, clean_inputs, PAMposition, get_codon_index, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count
+from CRISPR_TAPE.shared_functions import translate, clean_inputs, PAMposition, get_codon_index, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count
 
 class TestScript(unittest.TestCase):
 
