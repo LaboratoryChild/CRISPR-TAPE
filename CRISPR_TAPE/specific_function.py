@@ -16,13 +16,13 @@ def reverse_complement(dna):
     complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
     return ''.join([complement[base] for base in dna[::-1]])
 
-def off_target(search, reverse_search, orgen):
-     if not search == "":
-         term = [search,reverse_search]
-         count = sum(orgen.count(i) for i in term)- 1
-     else:
-         count = ""
-     return count
+def off_target(search, reverse_search, reference_genome):
+    if not search == "":
+        term = [search,reverse_search]
+        count = sum(reference_genome.count(i) for i in term)- 1
+    else:
+        count = ""
+    return count
 
 def specific_function(spec_amino,
                     distance,
@@ -31,9 +31,9 @@ def specific_function(spec_amino,
                     cds,
                     hundredup,
                     hundreddown,
-                    orgen):
+                    reference_genome):
 
-    dna_exon, dna, dna_edited, cds, orgen = clean_inputs(dna, cds, orgen, hundredup, hundreddown)
+    dna_exon, dna, dna_edited, cds, reference_genome = clean_inputs(dna, cds, reference_genome, hundredup, hundreddown)
 
     if dna_exon == cds: #Confirm that the inputted CDS sequence matches the CDS identified by the tool. If not the programme stops running.
         sys.stderr.write("Inputted CDS and concatenated exons match")
@@ -123,7 +123,7 @@ def specific_function(spec_amino,
     guides = pd.concat([upperguides, amino_acid, downerguides])
     sys.stderr.write("\nCounting off target matches...\n")
     ls = list(guides['full gRNA Sequence'] + guides["Reverse complement"])
-    count_list = list_search(ls, orgen)
+    count_list = list_search(ls, reference_genome)
     counter = Counter(count_list)
     guides['Off Target Count'] = guides.progress_apply(lambda row: get_count(row["full gRNA Sequence"], row["Reverse complement"], counter), axis=1)
     guides = guides[['Distance from Amino Acid (bp)', 'gRNA Sequence', 'PAM', 'Strand', 'G/C Content (%)', 'Off Target Count', 'Notes']] #Reorganise the guide RNA dataframe
@@ -141,7 +141,7 @@ def get_options():
     iGroup = parser.add_argument_group('Input files')
     iGroup.add_argument('--loci', required=True, help='File containing genomic loci')
     iGroup.add_argument('--cds', required=True, help='File containing coding sequence')
-    iGroup.add_argument('--genome', required=True, help='File containing genomic sequence')
+    iGroup.add_argument('--reference-genome', required=True, help='File containing genomic sequence')
 
     # target options
     tGroup = parser.add_argument_group('Targeting options')
@@ -179,8 +179,8 @@ def main():
         dna = l.read()
     with open(args.cds, 'r') as c:
         cds = c.read()
-    with open(args.genome, 'r') as g:
-        genome = g.read()
+    with open(args.reference_genome, 'r') as g:
+        reference_genome = g.read()
 
     # run function
     guides = specific_function(args.spec_amino,
@@ -190,7 +190,7 @@ def main():
                             cds,
                             args.up,
                             args.down,
-                            genome)
+                            reference_genome)
 
     # save output
     guides.to_csv(os.path.join(args.output, args.output + '.csv'))

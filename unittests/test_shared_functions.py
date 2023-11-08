@@ -2,7 +2,7 @@ import unittest
 import sys
 sys.path.insert(0, ".")
 
-from CRISPR_TAPE.shared_functions import translate, clean_inputs, PAMposition, get_codon_index, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count
+from CRISPR_TAPE.shared_functions import translate, clean_inputs, PAMposition, get_codon_index, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count, reverse_complement
 
 class TestScript(unittest.TestCase):
 
@@ -32,11 +32,10 @@ class TestScript(unittest.TestCase):
         PAM = "NGG"
         # execution
         positions, entries, strands = PAMposition(example_loci, PAM)
-        print(entries)
         # assertion
         self.assertTrue(5 == len(entries) == len(positions) == len(strands))
-        self.assertEqual([8, 22, 23, 31, 42], positions)
-        expected_entries = ['CCATGGATGCTAGCTACGGCTAA', 'GGATGCTAGCTACGGCTAACTGG', 'GATGCTAGCTACGGCTAACTGGG', 'CTACGGCTAACTGGGCTTAACGG', 'TGGGCTTAACGGATGCTAGCTGG']
+        self.assertEqual([7, 22, 23, 31, 42], positions)
+        expected_entries = ['TTAGCCGTAGCTAGCATCCATGG', 'GGATGCTAGCTACGGCTAACTGG', 'GATGCTAGCTACGGCTAACTGGG', 'CTACGGCTAACTGGGCTTAACGG', 'TGGGCTTAACGGATGCTAGCTGG']
         self.assertEqual(expected_entries, entries)
         expected_strands = ["reverse", "forward", "forward", "forward", "forward"]
         self.assertEqual(expected_strands, strands)
@@ -69,29 +68,29 @@ class TestScript(unittest.TestCase):
 
     def test_pamcolumn(self):
         # execution
-        actual_pam_one = pamcolumn("CTGACTGGATTGCTGGTCAATGG", "forward", "CCATTGACCAGCAATCCAGTCAG", "NGG")
-        actual_pam_two = pamcolumn("CCATTGACCAGCAATCCAGTCAG", "reverse", "CTGACTGGATTGCTGGTCAATGG", "NGG")
-        actual_pam_three = pamcolumn("CTGACTGGATTGCTGGTCAATAG", "forward", "CTATTGACCAGCAATCCAGTCAG", "YG")
-        actual_pam_four = pamcolumn("CTATTGACCAGCAATCCAGTCAG", "reverse", "CTGACTGGATTGCTGGTCAATAG", "YG")
-        actual_pam_five = pamcolumn("TTTACTATTGACCAGCAATCCAG", "forward", "CTGGATTGCTGGTCAATAGTAAA", "TTTN")
-        actual_pam_six = pamcolumn("CTGGATTGCTGGTCAATAGTAAA", "reverse", "TTTACTATTGACCAGCAATCCAG", "TTTN")
+        actual_pam_one = pamcolumn("CTGACTGGATTGCTGGTCAATGG", "forward", "NGG")
+        actual_pam_two = pamcolumn("CTGACTGGATTGCTGGTCAATGG", "reverse", "NGG")
+        actual_pam_three = pamcolumn("CTGACTGGATTGCTGGTCAATCG", "forward", "YG")
+        actual_pam_four = pamcolumn("CTGACTGGATTGCTGGTCAATCG", "reverse", "YG")
+        actual_pam_five = pamcolumn("TTTACTATTGACCAGCAATCCAG", "forward", "TTTN")
+        actual_pam_six = pamcolumn("TTTACTATTGACCAGCAATCCAG", "reverse", "TTTN")
         # assertion
         self.assertEqual(actual_pam_one, "TGG")
         self.assertEqual(actual_pam_two, "TGG")
-        self.assertEqual(actual_pam_three, "AG")
-        self.assertEqual(actual_pam_four, "AG")
+        self.assertEqual(actual_pam_three, "CG")
+        self.assertEqual(actual_pam_four, "CG")
         self.assertEqual(actual_pam_five, "TTTA")
         self.assertEqual(actual_pam_six, "TTTA")
-        self.assertRaises(AssertionError, pamcolumn, "CTGGATTGCTGGTCAATAGTGA", "reverse", "TCACTATTGACCAGCAATCCAG", "NGG")
+        self.assertRaises(AssertionError, pamcolumn, "TCACTATTGACCAGCAATCCAG", "reverse", "NGG")
 
     def test_remove_pam(self):
         # setup
-        actual_guide_one = remove_pam("CTGACTGGATTGCTGGTCAATGG", "forward", "CCATTGACCAGCAATCCAGTCAG", "NGG")
-        actual_guide_two = remove_pam("CCATTGACCAGCAATCCAGTCAG", "reverse", "CTGACTGGATTGCTGGTCAATGG", "NGG")
-        actual_guide_three = remove_pam("CTGACTGGATTGCTGGTCAATAG", "forward", "CTATTGACCAGCAATCCAGTCAG", "YG")
-        actual_guide_four = remove_pam("CTATTGACCAGCAATCCAGTCAG", "reverse", "CTGACTGGATTGCTGGTCAATAG", "YG")
-        actual_guide_five = remove_pam("TTTACTATTGACCAGCAATCCAG", "forward", "CTGGATTGCTGGTCAATAGTAAA", "TTTN")
-        actual_guide_six = remove_pam("CTGGATTGCTGGTCAATAGTAAA", "reverse", "TTTACTATTGACCAGCAATCCAG", "TTTN")
+        actual_guide_one = remove_pam("CTGACTGGATTGCTGGTCAATGG", "forward", "NGG")
+        actual_guide_two = remove_pam("CTGACTGGATTGCTGGTCAATGG", "reverse", "NGG")
+        actual_guide_three = remove_pam("CTGACTGGATTGCTGGTCAATCG", "forward", "YG")
+        actual_guide_four = remove_pam("CTGACTGGATTGCTGGTCAATCG", "reverse", "YG")
+        actual_guide_five = remove_pam("TTTACTATTGACCAGCAATCCAG", "forward", "TTTN")
+        actual_guide_six = remove_pam("TTTACTATTGACCAGCAATCCAG", "reverse", "TTTN")
         # assertion
         self.assertEqual(actual_guide_one, "CTGACTGGATTGCTGGTCAA")
         self.assertEqual(actual_guide_two, "CTGACTGGATTGCTGGTCAA")
@@ -99,7 +98,7 @@ class TestScript(unittest.TestCase):
         self.assertEqual(actual_guide_four, "CTGACTGGATTGCTGGTCAAT")
         self.assertEqual(actual_guide_five, "CTATTGACCAGCAATCCAG")
         self.assertEqual(actual_guide_six, "CTATTGACCAGCAATCCAG")
-        self.assertRaises(AssertionError, pamcolumn, "CTGGATTGCTGGTCAATAGTGA", "reverse", "TCACTATTGACCAGCAATCCAG", "NGG")
+        self.assertRaises(AssertionError, remove_pam, "CTGGATTGCTGGTCAATAGTGA", "reverse", "NGG")
 
     def test_correct_distance(self):
         self.assertEqual(correct_distance(10, "reverse"), 9)
@@ -108,9 +107,16 @@ class TestScript(unittest.TestCase):
     def test_list_search(self):
         counts = list_search(["ATG"], "ATGCATGCATG")
         self.assertIn("ATG", counts)
+        self.assertEqual(counts["ATG"], 3)
 
     def test_get_count(self):
         self.assertEqual(get_count("ATG", "CAT", {"ATG": 2, "CAT": 1}), 2)
+
+    def test_reverse_complement(self):
+        # execution
+        actual_rc = reverse_complement("AGTGKNTTGGATTACGGAH")
+        # assertion
+        self.assertEqual(actual_rc, "HTCCGTAATCCAANKCACT")
 
 if __name__ == '__main__':
     unittest.main()
