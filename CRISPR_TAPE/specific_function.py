@@ -93,8 +93,8 @@ def specific_function(spec_amino,
             upperguides = upperguides.sort_values(by = ['Distance from Amino Acid (bp)']) #Arrange guide RNAs by their distance from the amino acid
             upperguides['Distance from Amino Acid (bp)'] = upperguides.apply(lambda row: correct_distance(int(row['Distance from Amino Acid (bp)']), row['Strand']), axis =1) + 1
             upperguides["Reverse complement"] = upperguides.apply(lambda row: reverse_complement(row['full gRNA Sequence']), axis =1)
-            upperguides["PAM"] = upperguides.apply(lambda row: pamcolumn(row['full gRNA Sequence'], row['Strand'], row["Reverse complement"], motif), axis =1)
-            upperguides["gRNA Sequence"] = upperguides.apply(lambda row: remove_pam(row['full gRNA Sequence'], row['Strand'], row["Reverse complement"], motif), axis =1)
+            upperguides["PAM"] = upperguides.apply(lambda row: pamcolumn(row['full gRNA Sequence'], row['Strand'], motif), axis =1)
+            upperguides["gRNA Sequence"] = upperguides.apply(lambda row: remove_pam(row['full gRNA Sequence'], row['Strand'], motif), axis =1)
             upperguides['G/C Content (%)'] = upperguides.apply(lambda row: analyse_text(row['full gRNA Sequence']), axis =1) #Calculate GC percentage
             upperguides["Notes"] = upperguides.apply(lambda row: notes(row["full gRNA Sequence"], row["G/C Content (%)"]), axis=1) #Output notes of key guide RNA characterstics to a new column
             upperguides = upperguides.reset_index(drop=True)
@@ -112,8 +112,8 @@ def specific_function(spec_amino,
             downerguides = downerguides.sort_values(by=['Distance from Amino Acid (bp)']) #Arrange guide RNAs by their distance from the amino acid
             downerguides['Distance from Amino Acid (bp)'] = downerguides.apply(lambda row: correct_distance(int(row['Distance from Amino Acid (bp)']),row['Strand']), axis =1) - 1
             downerguides["Reverse complement"] = downerguides.apply(lambda row: reverse_complement(row['full gRNA Sequence']), axis =1)
-            downerguides["PAM"] = downerguides.apply(lambda row: pamcolumn(row['full gRNA Sequence'], row['Strand'], row["Reverse complement"], motif), axis =1)
-            downerguides["gRNA Sequence"] = downerguides.apply(lambda row: remove_pam(row['full gRNA Sequence'], row['Strand'], row["Reverse complement"], motif), axis =1)
+            downerguides["PAM"] = downerguides.apply(lambda row: pamcolumn(row['full gRNA Sequence'], row["Strand"], motif), axis =1)
+            downerguides["gRNA Sequence"] = downerguides.apply(lambda row: remove_pam(row['full gRNA Sequence'], row["Strand"], motif), axis =1)
             downerguides['G/C Content (%)'] = downerguides.apply(lambda row: analyse_text(row['full gRNA Sequence']), axis =1) #Calculate GC percentage
             downerguides["Notes"] = downerguides.apply(lambda row: notes(row["full gRNA Sequence"], row["G/C Content (%)"]), axis=1) #Output notes of key guide RNA characterstics to a new column
             downerguides = downerguides.reset_index(drop=True)
@@ -146,7 +146,7 @@ def get_options():
     # target options
     tGroup = parser.add_argument_group('Targeting options')
     tGroup.add_argument('--spec-amino', required=True, type = int, help='Amino acid/residue position')
-    tGroup.add_argument('--motif', choices=['NGG', 'YG', 'TTTN'], default='NGG', type=str, help='Cas9 motif')
+    tGroup.add_argument('--motif', choices=['NGG'], default='NGG', type=str, help='Cas9 motif')
     tGroup.add_argument('--distance', default=10000, type=int, help='Maximum distance from target (base pairs)')
 
     # output options
@@ -162,7 +162,7 @@ def get_options():
     args = parser.parse_args()
 
     # remove trailing forward slashes
-    for arg in [args.loci, args.cds, args.genome]:
+    for arg in [args.loci, args.cds, args.reference_genome]:
         arg = arg.rstrip('\\')
 
     return args
