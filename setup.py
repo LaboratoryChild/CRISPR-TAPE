@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="CRISPR-TAPE",
-    version="1.0.3",
+    version="1.0.4",
     author="Daniel Anderson",
     author_email="",
     license= "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License",

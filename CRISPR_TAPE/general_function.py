@@ -11,216 +11,237 @@ from collections import Counter
 import os
 import sys
 
-from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count
+from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, \
+        pamcolumn, remove_pam, correct_distance, list_search, get_count, reverse_complement
 
-def context(search, aas, motif): #Return the amino acid being target (marked by '*') and the amino acids immediately surrounding it
-    x = int(search)
-    if len(motif) == 1:
-        if x == 0:
-            surrounding= aas[x] + '*' + aas[x+1] + aas[x+2] + aas[x+3] +aas[x+4]
+def context(start_index, char_list, substring):
+    # Ensure the substring consists of characters from char_list
+    assert all(char in char_list for char in substring), "Invalid substring"
+    # Convert char_list to a string for easier manipulation
+    char_str = ''.join(char_list)
+    # Find the start index of the substring in char_str
+    assert substring in char_str, "Substring not found"
+    # Determine the end index of the motif
+    end_index = start_index + len(substring)
+    # Check that the motif index is correct
+    assert char_str[start_index: end_index] == substring, "Index of amino acid motif is incorrect"
+    # Construct the context string
+    left_index = start_index - 2
+    if left_index < 0:
+        left_index = 0
+    right_index = end_index + 2
+    if right_index > len(char_list):
+        right_index = len(char_list)
+    # get the context string
+    context_str = char_str[left_index: start_index] + '(' + substring + ')' + char_str[end_index: right_index]
+    return context_str
+
+def find_sign_change(row):
+    return next((i for i, val in enumerate(row[:-1])
+            if val * row[i + 1] <= 0), None)
+
+def process_upstream_distances(distances, gRNA):
+    # Initialise the list where we are storing the selected gRNA information
+    sequences = []
+    selected_positions = []
+    for amino_acid_row in distances:
+        # get the index of the distance immediately before a sign change
+        index = find_sign_change(amino_acid_row)
+        pos = None
+        if index is not None and index + 1 < len(amino_acid_row):
+            pos = index if amino_acid_row[index + 1] < -2 else min(index, index + 1, key=lambda x: abs(amino_acid_row[x]))
+        elif amino_acid_row[0] >= 0:
+            pos = len(gRNA) - 1
+        elif amino_acid_row[0] <= 0:
+            pos = 0
+        if pos is not None:
+            sequence_info = {
+                "Position": pos,
+                "Sequence": gRNA['full gRNA Sequence'][pos],
+                "Distance": amino_acid_row[pos],
+                "Strand": gRNA['Strand'][pos],
+                "G/C Content (%)": gRNA["G/C Content (%)"][pos]
+            }
         else:
-            if x == 1:
-                surrounding= aas[x-1] + aas[x] + '*' + aas[x+1] + aas[x+2] +aas[x+3]
-            else:
-                if x == len(aas) - 2 or x == len(aas) - 1:
-                    surrounding= aas[x-4] + aas[x-3] +aas[x-2] + aas[x-1] + aas[x] + '*'
-                else:
-                    if x == len(aas) - 3:
-                        surrounding= aas[x-3] + aas[x-2] +aas[x-1] + aas[x] + '*' + aas[x+1]
-                    else:
-                        surrounding= aas[x-2] + aas[x-1] +aas[x] + '*' + aas[x+1] + aas[x+2]
-    else:
-        amino_acids = "".join(aas)
-        length = len(motif)%2
+            sequence_info = {
+                "Position": "",
+                "Sequence": "No 5' guide could be identified",
+                "Distance": "",
+                "Strand": "",
+                "G/C Content (%)": 0
+            }
+        # Keep track of the gRNAs we have chosen so that we do not choose the same gRNA again
+        selected_positions.append(pos if pos is not None else "")
+        sequences.append(sequence_info)
+    return sequences, selected_positions
 
-        if not len(motif) == 2:
-            if length == 0:
-                half = int(len(motif)/2)
-            else:
-                half = int((len(motif)+1)/2)
-            surrounding = amino_acids[x - half + 1 : x + half]
+def process_downstream_distances(distances, gRNA, selected_positions):
+    sequences = []
+    for i in range(len(distances)):
+        # make a copy of the gRNA dataframe
+        row_gRNA = gRNA.copy()
+        # make a copy of the distances in the row
+        row_distances = distances[i][:]
+        # if we have chosen a 5' gRNA, then remove that from the gRNA options for this amino acid
+        if not selected_positions[i] == "":
+            row_gRNA = row_gRNA.drop([selected_positions[i]]).reset_index(drop=True)
+            del row_distances[selected_positions[i]]
+        # get the index of the distance immediately after a sign change
+        index = find_sign_change(row_distances)
+        pos = None
+        if index is not None:
+            index = index + 1
+            pos = index if row_distances[index] < -2 else min([index - 1, index], key=lambda x: abs(row_distances[x]))
+        elif row_distances[0] < 0:
+            pos = len(row_gRNA) - 1
+        elif row_distances[0] >= 0:
+            pos = 0
+        if pos is not None:
+            sequence_info = {
+                "Position": pos,
+                "Sequence": row_gRNA['full gRNA Sequence'][pos],
+                "Distance": row_distances[pos],
+                "Strand": row_gRNA['Strand'][pos],
+                "G/C Content (%)": row_gRNA["G/C Content (%)"][pos]
+            }
         else:
-            surrounding = amino_acids[x-1:x+1]
+            sequence_info = {
+                "Position": "",
+                "Sequence": "No 3' guide could be identified",
+                "Distance": "",
+                "Strand": "",
+                "G/C Content (%)": 0
+            }
+        sequences.append(sequence_info)
+    return sequences
 
-    return surrounding
+def find_motifs_in_amino_acid_sequence(motif, protein_dict):
+    # iterate through the amino acids to get the indices of the amino acid motifs we are looking for
+    amino_position = []
+    amino_acids = []
+    motif_length = len(motif)
+    for amino_acid_index in protein_dict:
+        if protein_dict[amino_acid_index]["Amino Acid"] == motif[0]:
+            # determine if we have found the motif of interest
+            indices_of_interest = [i for i in range(amino_acid_index, amino_acid_index + motif_length)]
+            assert len(indices_of_interest) == motif_length
+            if motif == "".join([protein_dict[i]["Amino Acid"] for i in indices_of_interest]):
+                amino_position.append(amino_acid_index)
+        amino_acids.append(protein_dict[amino_acid_index]["Amino Acid"])
+    return amino_position, amino_acids
 
-def get_gRNA_sequence(amino_pos, guide_dict):
-    guide_seq = ""
-    for x in range(len(guide_dict)):
-        if x == amino_pos:
-            guide_seq = guide_dict[x]["Sequence"]
-    return guide_seq
+def make_distance_matrix(first_list, second_list):
+    # convert the positions to an array
+    first_array = np.array(first_list)
+    second_array = np.array(second_list)
+    # get the distance of each cut site from each start and stop base
+    return np.subtract(second_array, first_array[:,None])
 
-def reverse_complement(dna):
-    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
-    if 'A' in dna or 'T' in dna or 'C' in dna or 'G' in dna:
-        comp = ''.join([complement[base] for base in dna[::-1]])
-    else:
-        comp = dna
-    return comp
-
-def get_strand(amino_pos, guide_dict):
-    guide_seq = ""
-    for x in range(len(guide_dict)):
-        if x == amino_pos:
-            guide_seq = guide_dict[x]["Strand"]
-    return guide_seq
-
-def get_distance(amino_pos, guide_dict):
-    guide_seq = ""
-    for x in range(len(guide_dict)):
-        if x == amino_pos:
-            guide_seq = guide_dict[x]["Distance"]
-    return guide_seq
-
-def get_gc(amino_pos, guide_dict):
-    guide_seq = ""
-    for x in range(len(guide_dict)):
-        if x == amino_pos:
-            guide_seq = guide_dict[x]['G/C Content (%)']
-    return guide_seq
-
-def general_function(aa,
-                    motif,
+def general_function(motif,
+                    PAM,
                     dna,
                     cds,
                     hundredup,
                     hundreddown,
-                    orgen):
-
-    dna_exon, dna, dna_edited, cds, orgen = clean_inputs(dna, cds, orgen, hundredup, hundreddown)
-
-    if len(aa) > 1:
-        mid_aa = aa[round((len(aa) + 1)/2)-1]
-    else:
-        mid_aa = aa
-
-    if dna_exon == cds: #Confirm that the inputted CDS sequence matches the CDS identified by the tool. If not the programme stops running.
+                    reference_genome):
+    # clean the inputs
+    dna_exon, dna, dna_edited, cds, reference_genome = clean_inputs(dna, cds, reference_genome, hundredup, hundreddown)
+    # confirm that the inputted CDS sequence matches the CDS identified by the tool. If not the programme stops running.
+    if dna_exon == cds:
         sys.stderr.write("\nInputted CDS and concatenated exons match\n")
     else:
-       sys.stderr.write("\nINPUTTED CDS AND CONCATENATED EXONS DO NOT MATCH\n")
-
+        raise AttributeError("\nINPUTTED CDS AND CONCATENATED EXONS DO NOT MATCH\n")
+    # convert the coding sequences to an amino acid dictionary
     protein_dict = get_codon_index(dna, cds)
-    amino_position = []
+    amino_position = set()
     amino_acids = []
-
-    for key, value in protein_dict.items():
-        if value["Amino Acid"] == mid_aa:
-            amino_position.append(key)
-        amino_acids.append(value["Amino Acid"])
-
-    if len(amino_position) == 0 and len(aa) == 1:
-        raise AttributeError("The amino acid " + aa +" is not present in this sequence.")
-    elif len(amino_position) == 0 and len(aa) > 1:
-        raise AttributeError("The motif " + aa + " is not present in this sequence.")
-
+    # iterate through the amino acids to get the indices of the amino acid motifs we are looking for
+    amino_position, amino_acids = find_motifs_in_amino_acid_sequence(motif, protein_dict)
+    # exit if the motif is not in the sequence
+    motif_length = len(motif)
+    assert not (len(amino_position) == 0 and motif_length == 1), "The amino acid " + motif +" is not present in this sequence."
+    assert not (len(amino_position) == 0 and motif_length > 1), "The motif " + motif + " is not present in this sequence."
     sys.stderr.write("\nSearching for gRNAs in loci...\n")
-
-    guide_positons, gRNA_list, guide_strands = PAMposition(dna_edited, motif)#Identify guides in the inputted genomic loci
-    gRNA = pd.DataFrame(gRNA_list, columns= ['full gRNA Sequence']) #Convert the gRNA list into a dataframe
-    gRNA['Position'] = guide_positons #Add a column of guide RNA cut site positions to the dataframe
-    gRNA['Strand'] = guide_strands #Add a column to specify these guides are on the forward strand relative to the inputted genomic loci.
-    gRNA["G/C Content (%)"] = gRNA['full gRNA Sequence'].apply(analyse_text)
-    gRNA = gRNA[gRNA['G/C Content (%)'] <= 75] #Remove guide RNAs with a G/C percentage above 75%
-    gRNA = gRNA.sort_values(by=['Position']).reset_index(drop=True) #Sort the guide RNAs by their position in the genomic loci
-
-    start_base= []
+    # find all guide RNAs in the genomic loci
+    guide_positions, gRNA_list, guide_strands = PAMposition(dna_edited, PAM)
+    # build the gRNA dataframe
+    gRNA = pd.DataFrame({
+        'full gRNA Sequence': gRNA_list,
+        'Position': guide_positions,
+        'Strand': guide_strands,
+        'G/C Content (%)': [analyse_text(seq) for seq in gRNA_list]
+    }).query("`G/C Content (%)` <= 75").sort_values(by='Position').reset_index(drop=True)
+    # get the start and stop bases of all amino acids of interest
+    start_base = []
     stop_base = []
-    for key, value in protein_dict.items():
-        if key in amino_position:
-            start_base.append(value["base_1"][0])
-            stop_base.append(value["base_3"][0])
-
-    guide_array = np.array(gRNA['Position'])
-    start_base_array = np.array(start_base)
-    stop_base_array = np.array(stop_base)
-
-    start_distances = np.subtract(guide_array,start_base_array[:,None])
-    stop_distances = np.subtract(guide_array,stop_base_array[:,None])
-
-    upstream_sequences = []
-    downstream_sequences = []
-
-    for x in start_distances:
-        index = ''
-        for y in range(len(x)-1):
-            if x[y]<=0 and x[y+1]>0:
-                index = y
-                up_index = y
-                continue
-        if not index == '':
-            upstream_sequences.append({"Position": up_index, "Sequence": gRNA['full gRNA Sequence'][up_index], "Distance": x[up_index], "Strand": gRNA['Strand'][up_index], "G/C Content (%)": gRNA["G/C Content (%)"][up_index]})
-        elif index == '' and x[len(x)-1]<=0:
-            upstream_sequences.append({"Position": len(x)-1, "Sequence": gRNA['full gRNA Sequence'][len(x)-1], "Distance": x[len(x)-1], "Strand": gRNA['Strand'][len(x)-1], "G/C Content (%)": gRNA["G/C Content (%)"][len(x)-1]})
-        elif index == '' and x[len(x)-1]>0:
-            upstream_sequences.append({"Position": "", "Sequence" : "No 5' guide could be identified", "Distance": "", "Strand": "", "G/C Content (%)": 0})
-        else:
-            raise AttributeError("No guide RNAs identified in sequence")
-
-    for x in stop_distances:
-        index = ''
-        for y in range(len(x)-1):
-            if x[y]<=0 and x[y+1]>0:
-                index = y
-                down_index = y+1
-                continue
-        if not index == '':
-            downstream_sequences.append({"Position": down_index, "Sequence": gRNA['full gRNA Sequence'][down_index], "Distance": x[down_index], "Strand": gRNA['Strand'][down_index], "G/C Content (%)": gRNA["G/C Content (%)"][down_index]})
-        elif index == '' and x[len(x)-1]<=0:
-            downstream_sequences.append({"Position": "", "Sequence": "No 3' guide could be identified", "Distance": "", "Strand": "", "G/C Content (%)": 0})
-        elif index == '' and x[len(x)-1]>0:
-            downstream_sequences.append({"Position": 0, "Sequence" : gRNA['full gRNA Sequence'][0], "Distance": x[0], "Strand": gRNA['Strand'][0], "G/C Content (%)": gRNA["G/C Content (%)"][0]})
-        else:
-            raise AttributeError("No guide RNAs identified in sequence")
-
-    guides = pd.DataFrame(amino_position, columns= ['Amino Acid Position'])
-    guides["Context"] = guides.apply(lambda row: context(row["Amino Acid Position"], amino_acids, aa), axis = 1)
-
-    if len(aa) > 1:
-        indexNames = guides[guides['Context'] != aa].index
-        guides.drop(indexNames , inplace=True)
-
-    guides["Amino Acid Position"] = guides["Amino Acid Position"] + 1
-    guides["5' gRNA Sequence"] = guides.apply(lambda row: get_gRNA_sequence(row.name, upstream_sequences), axis = 1)
+    for amino_acid_index in protein_dict:
+        if amino_acid_index in amino_position:
+            start_base.append(protein_dict[amino_acid_index]["base_1"][0])
+            stop_base.append(protein_dict[amino_acid_index]["base_3"][0])
+    # make a matrix of the distance of all gRNA cut sites from all start bases.
+    # -1 in this matrix means that the cut is to the right of the start base, relative to the strand of the inputted genomic loci
+    start_distances = -1 * (make_distance_matrix(start_base, gRNA['Position']) + 1)
+    # make a matrix of the distance of all gRNA cut sites from all stop bases
+    # -1 in this matrix means that the cut is to the left of the start base, relative to the strand of the inputted genomic loci
+    stop_distances = make_distance_matrix(stop_base, gRNA['Position'])
+    # choose the closest upstream gRNA for each amino acid of interest
+    upstream_sequences, selected_positions = process_upstream_distances(start_distances.tolist(), gRNA)
+    # choose the closest downstream gRNA for each amino acid of interest
+    downstream_sequences = process_downstream_distances(stop_distances.tolist(), gRNA, selected_positions)
+    # initialise the guide dataframe
+    guides = pd.DataFrame(amino_position, columns=['Amino Acid Position'])
+    # get the context of each amino acid
+    guides["Context"] = guides.apply(lambda row: context(row["Amino Acid Position"], amino_acids, motif), axis = 1)
+    # extract the 5' guide information
+    guides["5' gRNA Sequence"] = [row["Sequence"] for row in upstream_sequences]
     guides["5' gRNA Sequence RC"] = guides["5' gRNA Sequence"].apply(reverse_complement)
-    guides["3' gRNA Sequence"] = guides.apply(lambda row: get_gRNA_sequence(row.name, downstream_sequences), axis = 1)
-    guides["3' gRNA Sequence RC"] = guides["3' gRNA Sequence"].apply(reverse_complement)
-    guides["5' gRNA Strand"] = guides.apply(lambda row: get_strand(row.name, upstream_sequences), axis = 1)
-    guides["3' gRNA Strand"] = guides.apply(lambda row: get_strand(row.name, downstream_sequences), axis = 1)
-    guides["Distance of 5' Cut Site from Amino Acid (bp)"] = guides.apply(lambda row: get_distance(row.name, upstream_sequences), axis = 1)
-    guides["Distance of 5' Cut Site from Amino Acid (bp)"] = guides.apply(lambda row: correct_distance(row["Distance of 5' Cut Site from Amino Acid (bp)"], row["5' gRNA Strand"]), axis = 1)
-    guides["Distance of 3' Cut Site from Amino Acid (bp)"] = guides.apply(lambda row: get_distance(row.name, downstream_sequences), axis = 1)
-    guides["Distance of 3' Cut Site from Amino Acid (bp)"] = guides.apply(lambda row: correct_distance(row["Distance of 3' Cut Site from Amino Acid (bp)"], row["3' gRNA Strand"]), axis = 1)
-    guides["5' gRNA G/C Content (%)"] =  guides.apply(lambda row: get_gc(row.name, upstream_sequences), axis = 1)
-    guides["3' gRNA G/C Content (%)"] =  guides.apply(lambda row: get_gc(row.name, downstream_sequences), axis = 1)
-
-    try:
-        guides["5' Notes"] = guides.apply(lambda row: notes(row["5' gRNA Sequence"], row["5' gRNA G/C Content (%)"]), axis = 1)
-        guides["3' Notes"] = guides.apply(lambda row: notes(row["3' gRNA Sequence"], row["3' gRNA G/C Content (%)"]), axis = 1)
-    except:
-        raise AttributeError("No " + aa + " motifs identified in sequence")
-
-    sys.stderr.write("\nCounting off target matches...\n")
-
+    guides["Distance of 5' Cut Site from Amino Acid (bp)"] = [row["Distance"] for row in upstream_sequences]
+    guides["5' gRNA Strand"] = [row["Strand"] for row in upstream_sequences]
+    guides["5' gRNA G/C Content (%)"] = [row["G/C Content (%)"] for row in upstream_sequences]
+    # extract the 3' guide information
+    guides["3' gRNA Sequence"] = [row["Sequence"] for row in downstream_sequences]
+    guides["3' gRNA Sequence RC"] = guides["5' gRNA Sequence"].apply(reverse_complement)
+    guides["Distance of 3' Cut Site from Amino Acid (bp)"] = [row["Distance"] for row in downstream_sequences]
+    guides["3' gRNA Strand"] = [row["Strand"] for row in downstream_sequences]
+    guides["3' gRNA G/C Content (%)"] = [row["G/C Content (%)"] for row in downstream_sequences]
+    assert len(guides) != 0, f"No {motif} motifs identified in sequence"
+    # check for issues with the guide RNAs
+    guides["5' Notes"] = guides.apply(lambda row: notes(row["5' gRNA Sequence"], row["5' gRNA G/C Content (%)"]), axis = 1)
+    guides["3' Notes"] = guides.apply(lambda row: notes(row["3' gRNA Sequence"], row["3' gRNA G/C Content (%)"]), axis = 1)
+    # count the number of exact off target matches
+    # (NOTE: this can be made to work with non-exact matches by mapping the guide RNAs back to the reference using e.g. Minimap2)
+    sys.stderr.write("\nCounting off target exact matches...\n")
     ls = list(guides["5' gRNA Sequence"]) + list(guides["5' gRNA Sequence RC"]) + list(guides["3' gRNA Sequence"]) + list(guides["3' gRNA Sequence RC"])
-    count_list = list_search(ls, orgen)
-    counter = Counter(count_list)
-
+    counter = list_search(ls, reference_genome)
     guides["5' gRNA Off Target Count"] = guides.apply(lambda row: get_count(row["5' gRNA Sequence"], row["5' gRNA Sequence RC"], counter), axis=1)
     guides["3' gRNA Off Target Count"] = guides.apply(lambda row: get_count(row["3' gRNA Sequence"], row["3' gRNA Sequence RC"], counter), axis=1)
-
-    guides["5' PAM"] = guides.apply(lambda row: pamcolumn(row["5' gRNA Sequence"], row["5' gRNA Strand"], row["5' gRNA Sequence RC"], motif), axis =1)
-    guides["3' PAM"] = guides.apply(lambda row: pamcolumn(row["3' gRNA Sequence"], row["3' gRNA Strand"], row["3' gRNA Sequence RC"], motif), axis =1)
-    guides["5' gRNA Sequence"] = guides.apply(lambda row: remove_pam(row["5' gRNA Sequence"], row["5' gRNA Strand"], row["5' gRNA Sequence RC"], motif), axis =1)
-    guides["3' gRNA Sequence"] = guides.apply(lambda row: remove_pam(row["3' gRNA Sequence"], row["3' gRNA Strand"], row["3' gRNA Sequence RC"], motif), axis =1)
-
-    guides[' '] = '' #Empty column in dataframe
-
-    guides = guides[["Amino Acid Position", "Context", ' ', "5' gRNA Sequence", "5' PAM", "5' gRNA Strand", "5' gRNA G/C Content (%)", "Distance of 5' Cut Site from Amino Acid (bp)", "5' Notes", "5' gRNA Off Target Count", ' ', "3' gRNA Sequence", "3' PAM", "3' gRNA Strand", "3' gRNA G/C Content (%)", "Distance of 3' Cut Site from Amino Acid (bp)", "3' Notes", "3' gRNA Off Target Count"]] #Reorganise guide dataframe columns for output
-    if len(aa) == 1:
-        guides.columns = ["Amino Acid Position", "Adjacent amino acids", '                        ', "gRNA Sequence 5' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count", '                        ', "gRNA Sequence 3' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count"] #Rename guide dataframe columns for output
-    else:
-        guides.columns = ["Amino Acid Position", "Targeted motif", '                        ', "gRNA Sequence 5' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count", '                        ', "gRNA Sequence 3' of Amino Acid", "PAM", "gRNA Strand", "gRNA G/C Content (%)", "Distance of Cut Site from Amino Acid (bp)", "Notes", "gRNA Off Target Count"] #Rename guide dataframe columns for output
+    # make a separate column for the PAM sequence
+    guides["5' PAM"] = guides.apply(lambda row: pamcolumn(row["5' gRNA Sequence"], row["5' gRNA Strand"], PAM), axis =1)
+    guides["3' PAM"] = guides.apply(lambda row: pamcolumn(row["3' gRNA Sequence"], row["3' gRNA Strand"], PAM), axis =1)
+    # remove the PAM from the gRNA sequence
+    guides["5' gRNA Sequence"] = guides.apply(lambda row: remove_pam(row["5' gRNA Sequence"], row["5' gRNA Strand"], PAM), axis =1)
+    guides["3' gRNA Sequence"] = guides.apply(lambda row: remove_pam(row["3' gRNA Sequence"], row["3' gRNA Strand"], PAM), axis =1)
+    # make the amino acid positions 1-based
+    guides["Amino Acid Position"] = [p + 1 for p in list(guides["Amino Acid Position"])]
+    # sort the rows by ascending amino acid position
+    guides = guides.sort_values(by=["Amino Acid Position"], ascending=True).reset_index(drop=True)
+    # reorganise guide dataframe columns for output
+    guides = guides[["Amino Acid Position",
+                    "Context",
+                    "5' gRNA Sequence",
+                    "5' PAM",
+                    "5' gRNA Strand",
+                    "5' gRNA G/C Content (%)",
+                    "Distance of 5' Cut Site from Amino Acid (bp)",
+                    "5' Notes",
+                    "5' gRNA Off Target Count",
+                    "3' gRNA Sequence",
+                    "3' PAM",
+                    "3' gRNA Strand",
+                    "3' gRNA G/C Content (%)",
+                    "Distance of 3' Cut Site from Amino Acid (bp)",
+                    "3' Notes",
+                    "3' gRNA Off Target Count"]]
     return guides
 
 def get_options():
@@ -228,7 +249,7 @@ def get_options():
     import argparse
 
     parser = argparse.ArgumentParser(description='Target all amino acids of a specific type',
-                                     prog='CRISPR-TAPE_specific')
+                                    prog='CRISPR-TAPE_specific')
 
     # input options
     iGroup = parser.add_argument_group('Input files')
@@ -238,8 +259,8 @@ def get_options():
 
     # target options
     tGroup = parser.add_argument_group('Targeting options')
-    tGroup.add_argument('--aa', required=True, type = str, help='Amino acid short letter code')
-    tGroup.add_argument('--motif', choices=['NGG', 'YG', 'TTTN'], default='NGG', type=str, help='Cas9 motif')
+    tGroup.add_argument('--motif', required=True, type = str, help='Amino acid short letter code or a run of adjacent amino acids to target.')
+    tGroup.add_argument('--PAM', choices=['NGG'], default='NGG', type=str, help='Cas9 motif')
 
     # output options
     oGroup = parser.add_argument_group('Output options')
@@ -275,8 +296,8 @@ def main():
         genome = g.read()
 
     # run function
-    guides = general_function(args.aa,
-                            args.motif,
+    guides = general_function(args.motif,
+                            args.PAM,
                             dna,
                             cds,
                             args.up,
