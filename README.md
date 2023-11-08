@@ -5,7 +5,7 @@ A protein-centric CRISPR gRNA design tool for TArgeted Protein Engineering
 Existing CRIPSR gRNA design tools target protein-coding regions within genomic loci and non-specifically target the entire input region of DNA. Current tools fail to consider proteomic-based applications, so CRISPR-TAPE has been developed to reduce the substantial time burden associated with manual curation of gRNA libraries and empower the proteomics community.
 
 # Version
-CRISPR-TAPE version 1.0.4
+CRISPR-TAPE version 1.0.5
 
 # LICENSE
 Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License
@@ -21,6 +21,18 @@ cd CRISPR-TAPE
 python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
+```
+Alternatively, CRISPR-TAPE is available via PyPI:
+```
+pip install CRISPR-TAPE
+```
+To use the general amino acid targeting function, add the following to the top of your Python script:
+```
+from CRISPR_TAPE import general_function
+```
+To use the specific amino acid targeting function, add the following to the top of your Python script:
+```
+from CRISPR_TAPE import specific_function
 ```
 
 # Linux users
