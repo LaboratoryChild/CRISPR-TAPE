@@ -6,8 +6,6 @@ Identify gRNAs immediately adjacent to all amino acids of a specific type
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-from collections import Counter
 import os
 import sys
 

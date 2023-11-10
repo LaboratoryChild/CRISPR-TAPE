@@ -5,7 +5,6 @@ Functions shared by specific and general functions
 import re
 import pandas as pd
 from tqdm import tqdm
-import sys
 
 def translate(seq):
     """ Translate the exon sequence of the gene into its respective amino acid codes using a dictionary """
