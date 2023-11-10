@@ -3,7 +3,6 @@
 """
 Identify guides surrounding a specific residue position within a maximum distance range
 """
-from collections import Counter
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -119,8 +118,7 @@ def specific_function(spec_amino,
     guides = pd.concat([upperguides, amino_acid, downerguides])
     sys.stderr.write("\nCounting off target matches...\n")
     ls = list(guides['full gRNA Sequence'] + guides["Reverse complement"])
-    count_list = list_search(ls, reference_genome)
-    counter = Counter(count_list)
+    counter = list_search(ls, reference_genome)
     guides['Off Target Count'] = guides.progress_apply(lambda row: get_count(row["full gRNA Sequence"], row["Reverse complement"], counter), axis=1)
     guides = guides[['Distance from Amino Acid (bp)', 'gRNA Sequence', 'PAM', 'Strand', 'G/C Content (%)', 'Off Target Count', 'Notes']] #Reorganise the guide RNA dataframe
 
@@ -142,7 +140,7 @@ def get_options():
     # target options
     tGroup = parser.add_argument_group('Targeting options')
     tGroup.add_argument('--spec-amino', required=True, type = int, help='Amino acid/residue position')
-    tGroup.add_argument('--motif', choices=['NGG'], default='NGG', type=str, help='Cas9 motif')
+    tGroup.add_argument('--PAM', choices=['NGG'], default='NGG', type=str, help='Cas9 motif')
     tGroup.add_argument('--distance', default=10000, type=int, help='Maximum distance from target (base pairs)')
 
     # output options
@@ -181,7 +179,7 @@ def main():
     # run function
     guides = specific_function(args.spec_amino,
                             args.distance,
-                            args.motif,
+                            args.PAM,
                             dna,
                             cds,
                             args.up,

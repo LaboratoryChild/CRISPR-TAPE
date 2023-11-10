@@ -227,7 +227,6 @@ def general_function(motif,
     sys.stderr.write("\nCounting off target exact matches...\n")
     ls = list(guides["5' gRNA Sequence"]) + list(guides["5' gRNA Sequence RC"]) + list(guides["3' gRNA Sequence"]) + list(guides["3' gRNA Sequence RC"])
     counter = list_search(ls, reference_genome)
-    print(counter, ls)
     guides["5' gRNA Off Target Count"] = guides.apply(lambda row: get_count(row["5' gRNA Sequence"], row["5' gRNA Sequence RC"], counter), axis=1)
     guides["3' gRNA Off Target Count"] = guides.apply(lambda row: get_count(row["3' gRNA Sequence"], row["3' gRNA Sequence RC"], counter), axis=1)
     # make a separate column for the PAM sequence
@@ -263,18 +262,18 @@ def get_options():
 
     import argparse
 
-    parser = argparse.ArgumentParser(description='Target all amino acids of a specific type',
-                                    prog='CRISPR-TAPE_specific')
+    parser = argparse.ArgumentParser(description='Target all amino acids or multi-amino acid motifs in a sequence',
+                                    prog='CRISPR-TAPE_general')
 
     # input options
     iGroup = parser.add_argument_group('Input files')
     iGroup.add_argument('--loci', required=True, help='File containing genomic loci')
     iGroup.add_argument('--cds', required=True, help='File containing coding sequence')
-    iGroup.add_argument('--genome', required=True, help='File containing genomic sequence')
+    iGroup.add_argument('--reference-genome', required=True, help='File containing genomic sequence')
 
     # target options
     tGroup = parser.add_argument_group('Targeting options')
-    tGroup.add_argument('--motif', required=True, type = str, help='Amino acid short letter code or a run of adjacent amino acids to target.')
+    tGroup.add_argument('--motif', required=True, type = str, help='Amino acid short letter code or a run of adjacent amino acids to target. "*" can be used to denote an ambiguous base position.')
     tGroup.add_argument('--PAM', choices=['NGG'], default='NGG', type=str, help='Cas9 motif')
 
     # output options
@@ -290,7 +289,7 @@ def get_options():
     args = parser.parse_args()
 
     # remove trailing forward slashes
-    for arg in [args.loci, args.cds, args.genome]:
+    for arg in [args.loci, args.cds, args.reference_genome]:
         arg = arg.replace(' ', '')
 
     return args
@@ -307,7 +306,7 @@ def main():
         dna = l.read()
     with open(args.cds, 'r') as c:
         cds = c.read()
-    with open(args.genome, 'r') as g:
+    with open(args.reference_genome, 'r') as g:
         genome = g.read()
 
     # run function
