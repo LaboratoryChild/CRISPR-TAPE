@@ -223,7 +223,6 @@ class TestScriptFunctions(unittest.TestCase):
                                     "",
                                     "",
                                     reference_genome)
-        actual_guides.to_csv("out.csv")
         # assertion
         expected_gRNA_list = ["CTCCGAGCTGCAGCGCCAGCTGG",
                         "AGCTGCAGCGCCAGCTGGTTTGG",
@@ -243,7 +242,6 @@ class TestScriptFunctions(unittest.TestCase):
         self.assertEqual(len(actual_gRNA_list), len(expected_gRNA_list))
         self.assertTrue(all(g in expected_gRNA_list for g in actual_gRNA_list) and all(g in actual_gRNA_list for g in expected_gRNA_list))
         self.assertEqual(len(actual_guides), 1)
-        actual_guides.to_csv("unittest_guide.csv")
         self.assertEqual(list(actual_guides["Amino Acid Position"]),  [7])
         self.assertEqual(list(actual_guides["Context"]), ["LQ(RQLAL)HR"])
         # test the 5' guides

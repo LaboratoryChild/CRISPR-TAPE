@@ -319,7 +319,9 @@ def main():
                             genome)
 
     # save output
-    guides.to_csv(os.path.join(args.output, args.output + '.csv'))
+    if not ".csv" in args.output:
+        args.output = args.output + ".csv"
+    guides.to_csv(os.path.join(args.output, args.output))
     sys.stderr.write("\nDone\n")
 
 if __name__ == '__main__':

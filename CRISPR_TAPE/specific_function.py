@@ -78,7 +78,7 @@ def specific_function(spec_amino,
         raise AttributeError("No guide RNAs identified in sequence")
     tqdm.pandas()
     noguides = pd.DataFrame(columns=["full gRNA Sequence", "Position", "Strand", "Distance from Amino Acid (bp)", "Reverse complement", "PAM", "gRNA Sequence", "G/C Content (%)", "Notes", 'Off Target Count']) #Generate a new amino acid for the amino acid target information
-    noguides = noguides.append({"full gRNA Sequence": "", "Position" : "", "Strand":"","Distance from Amino Acid (bp)":"","Reverse complement": "", "PAM": "", "gRNA Sequence": "No guides within distance range specified", "G/C Content (%)":"","Notes":"", 'Off Target Count': ""}, ignore_index=True) #Generate a new amino acid for the amino acid target information
+    noguides.loc[0] = {"full gRNA Sequence": "", "Position" : "", "Strand":"","Distance from Amino Acid (bp)":"","Reverse complement": "", "PAM": "", "gRNA Sequence": "No guides within distance range specified", "G/C Content (%)":"","Notes":"", 'Off Target Count': ""} #Generate a new amino acid for the amino acid target information
 
     if not isinstance(upperguides, str):
         upperguides = upperguides[upperguides["Distance from Amino Acid (bp)"] >= (-distance)]  #Remove guides over the inputted maximum guide distance
@@ -97,7 +97,7 @@ def specific_function(spec_amino,
         upperguides = noguides
 
     amino_acid = pd.DataFrame(columns=["full gRNA Sequence", "Position", "Strand", "Distance from Amino Acid (bp)", "Reverse complement", "PAM", "gRNA Sequence", "G/C Content (%)", "Notes", 'Off Target Count']) #Generate a new amino acid for the amino acid target information
-    amino_acid = amino_acid.append({"full gRNA Sequence": "", "Position" : "", "Strand":"","Distance from Amino Acid (bp)":"","Reverse complement": "", "PAM": "", "gRNA Sequence": selectionmade, "G/C Content (%)":"","Notes":"", 'Off Target Count': ""}, ignore_index=True) #Generate a new amino acid for the amino acid target information
+    amino_acid.loc[0] = {"full gRNA Sequence": "", "Position" : "", "Strand":"","Distance from Amino Acid (bp)":"","Reverse complement": "", "PAM": "", "gRNA Sequence": selectionmade, "G/C Content (%)":"","Notes":"", 'Off Target Count': ""}#Generate a new amino acid for the amino acid target information
 
     if not isinstance(downerguides, str):
         downerguides = downerguides[downerguides["Distance from Amino Acid (bp)"] <= distance]
@@ -187,7 +187,9 @@ def main():
                             reference_genome)
 
     # save output
-    guides.to_csv(os.path.join(args.output, args.output + '.csv'))
+    if not ".csv" in args.output:
+        args.output = args.output + '.csv'
+    guides.to_csv(args.output)
     sys.stderr.write("\nDone\n")
 
 if __name__ == '__main__':
