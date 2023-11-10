@@ -44,7 +44,7 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d, gf): #Function to get the
             csvfilename = str(filename + ".csv")
         else:
             csvfilename = filename
-        output_path = os.path.join(os.getcwd(), csvfilename)
+        output_path = os.path.join(os.path.dirname(genome_file), csvfilename)
         guides.to_csv(output_path, index=False)
 
         done = Tk()
@@ -100,7 +100,7 @@ def retrieve_gen(gen, hup, hdn, thepam, dn, fn, v, gf): #Function to get the val
             csvfilename = str(filename + ".csv")
         else:
             csvfilename = filename
-        output_path = os.path.join(os.getcwd(), csvfilename)
+        output_path = os.path.join(os.path.dirname(genome_file), csvfilename)
         guides.to_csv(output_path, index=False)
 
         done = Tk()
