@@ -68,30 +68,6 @@ class TestScriptFunctions(unittest.TestCase):
         self.assertEqual(list(actual_output[1]), expected_output[1])
         self.assertEqual(list(actual_output[2]), expected_output[2])
 
-    def test_no_sign_change(self):
-        self.assertIsNone(find_sign_change([1, 2, 3, 4, 5]))
-
-    def test_sign_change_positive_to_negative(self):
-        self.assertEqual(find_sign_change([1, 2, -3, 4]), 1)
-
-    def test_sign_change_negative_to_positive(self):
-        self.assertEqual(find_sign_change([-1, -2, 3, 4]), 1)
-
-    def test_sign_change_at_end(self):
-        self.assertEqual(find_sign_change([1, 2, 3, -4]), 2)
-
-    def test_sign_change_at_beginning(self):
-        self.assertEqual(find_sign_change([-1, 2, 3, 4]), 0)
-
-    def test_empty_list(self):
-        self.assertIsNone(find_sign_change([]))
-
-    def test_single_element(self):
-        self.assertIsNone(find_sign_change([1]))
-
-    def test_zero_in_list(self):
-        self.assertEqual(find_sign_change([-1, 0, 1]), 0)
-
     def test_general_function_single_aa_NGG(self):
         # setup
         motif = "L"
@@ -108,7 +84,6 @@ class TestScriptFunctions(unittest.TestCase):
                                     "",
                                     "",
                                     reference_genome)
-        actual_guides.to_csv("out.csv")
         # assertion
         expected_gRNA_list = ["CTCCGAGCTGCAGCGCCAGCTGG",
                         "AGCTGCAGCGCCAGCTGGTTTGG",

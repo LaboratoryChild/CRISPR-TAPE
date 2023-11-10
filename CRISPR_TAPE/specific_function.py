@@ -9,15 +9,12 @@ from tqdm import tqdm
 import sys
 import os
 
-from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count, reverse_complement
+from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, list_search, get_count, reverse_complement, find_sign_change
 
-def off_target(search, reverse_search, reference_genome):
-    if not search == "":
-        term = [search,reverse_search]
-        count = sum(reference_genome.count(i) for i in term)- 1
-    else:
-        count = ""
-    return count
+def get_upstream_gRNA_dataframe(gRNA):
+    # get the guides that are upstream of the amino acid of interest
+    upstream_guides = gRNA.query("`Distance from start of Amino Acid (bp)` < 3")
+    return upstream_guides
 
 def specific_function(spec_amino,
                     distance,
@@ -34,18 +31,12 @@ def specific_function(spec_amino,
         sys.stderr.write("Inputted CDS and concatenated exons match")
     else:
         sys.stderr.write("INPUTTED CDS AND CONCATENATED EXONS DO NOT MATCH")
-
+    # convert the CDS to a protein dictionary
     protein_dict = get_codon_index(dna, cds)
-    for key, value in protein_dict[spec_amino - 1].items():
-        if key == "base_2":
-            middle = value[0]
-        if key == "Amino Acid":
-            selectedaa = value
-
-    selectionmade = selectedaa + '-' + str(spec_amino)
-
+    # display information about the selected amino acid
+    selectionmade = protein_dict[spec_amino - 1]["Amino Acid"] + '-' + str(spec_amino)
     sys.stderr.write('\nThe amino acid you have selected is ' + selectionmade + '\n') #Confirm the selection is the correct amino acid
-    sys.stderr.write('\nThe motif you have selected is ' + motif + '\n')
+    sys.stderr.write('The PAM you have selected is ' + motif + '\n')
     # generate lists of all the potential guides within the genomic loci and a list of all guides on the reverse complement.
     sys.stderr.write("\nSearching for gRNAs in loci...\n")
     guide_positons, gRNA_list, guide_strands = PAMposition(dna_edited, motif)#Identify PAMs in the inputted genomic loci
@@ -56,72 +47,51 @@ def specific_function(spec_amino,
     if "" in gRNA_list:
         gRNA = gRNA.drop(gRNA[gRNA['full gRNA Sequence'] == ""].index)
     gRNA = gRNA.sort_values(by=['Position']).reset_index(drop=True) #Sort the guide RNAs by their position in the genomic loci
-    gRNA["Distance from Amino Acid (bp)"] = np.array(gRNA["Position"]) - middle #Determine guide distance from base at the centre of the codon
-
-    upperguides = "No guides within distance range specified"
-    downerguides = "No guides within distance range specified"
-
-    if not len(gRNA) == 0:
-        sys.stderr.write('\n' + str(len(gRNA)) + " guides found\n")
-        slice_index = " "
-        for dis in range(len(gRNA)-1):
-            if gRNA["Distance from Amino Acid (bp)"][dis] < 0 and gRNA["Distance from Amino Acid (bp)"][dis+1] > 0:
-                slice_index = dis
-        if not slice_index == " ":
-            upperguides = gRNA.iloc[:slice_index+1,]
-            downerguides = gRNA.iloc[slice_index+1:,]
-        elif gRNA["Distance from Amino Acid (bp)"][dis] < 0:
-            upperguides = gRNA
-        else:
-            downerguides = gRNA
-    else:
-        raise AttributeError("No guide RNAs identified in sequence")
-    tqdm.pandas()
+    assert not len(gRNA) == 0, "No guide RNAs identified in sequence"
+    sys.stderr.write('\n' + str(len(gRNA)) + " guides found\n")
+    # get the distance of the gRNAs from the start and end base of the amino acid
+    start_base = protein_dict[spec_amino - 1]["base_1"][0]
+    end_base = protein_dict[spec_amino - 1]["base_3"][0]
+    gRNA["Distance from start of Amino Acid (bp)"] = np.array(gRNA["Position"]) - start_base + 1
+    gRNA["Distance from end of Amino Acid (bp)"] = np.array(gRNA["Position"]) - end_base
+    # define a dataframe for if there are no guides within the distance range
     noguides = pd.DataFrame(columns=["full gRNA Sequence", "Position", "Strand", "Distance from Amino Acid (bp)", "Reverse complement", "PAM", "gRNA Sequence", "G/C Content (%)", "Notes", 'Off Target Count']) #Generate a new amino acid for the amino acid target information
     noguides.loc[0] = {"full gRNA Sequence": "", "Position" : "", "Strand":"","Distance from Amino Acid (bp)":"","Reverse complement": "", "PAM": "", "gRNA Sequence": "No guides within distance range specified", "G/C Content (%)":"","Notes":"", 'Off Target Count': ""} #Generate a new amino acid for the amino acid target information
-
-    if not isinstance(upperguides, str):
-        upperguides = upperguides[upperguides["Distance from Amino Acid (bp)"] >= (-distance)]  #Remove guides over the inputted maximum guide distance
-        if len(upperguides) == 0:
-            downerguides = noguides
-        else:
-            upperguides = upperguides.sort_values(by = ['Distance from Amino Acid (bp)']) #Arrange guide RNAs by their distance from the amino acid
-            upperguides['Distance from Amino Acid (bp)'] = upperguides.apply(lambda row: correct_distance(int(row['Distance from Amino Acid (bp)']), row['Strand']), axis =1) + 1
-            upperguides["Reverse complement"] = upperguides.apply(lambda row: reverse_complement(row['full gRNA Sequence']), axis =1)
-            upperguides["PAM"] = upperguides.apply(lambda row: pamcolumn(row['full gRNA Sequence'], row['Strand'], motif), axis =1)
-            upperguides["gRNA Sequence"] = upperguides.apply(lambda row: remove_pam(row['full gRNA Sequence'], row['Strand'], motif), axis =1)
-            upperguides['G/C Content (%)'] = upperguides.apply(lambda row: analyse_text(row['full gRNA Sequence']), axis =1) #Calculate GC percentage
-            upperguides["Notes"] = upperguides.apply(lambda row: notes(row["full gRNA Sequence"], row["G/C Content (%)"]), axis=1) #Output notes of key guide RNA characterstics to a new column
-            upperguides = upperguides.reset_index(drop=True)
-    else:
-        upperguides = noguides
-
+    # get the upstream guide RNA dataframe
+    upstream_guides = gRNA.query("`Distance from start of Amino Acid (bp)` < 3").query(f"`Distance from start of Amino Acid (bp)` >= {-distance}")
+    upstream_guides = upstream_guides.rename(columns={"Distance from start of Amino Acid (bp)": "Distance from Amino Acid (bp)"})
+    upstream_guides = upstream_guides.drop("Distance from end of Amino Acid (bp)", axis=1)
+    if len(upstream_guides) == 0:
+        upstream_guides = noguides
+    # get the downstream guide RNA dataframe
+    downstream_guides = gRNA.query("`Distance from end of Amino Acid (bp)` > -3").query(f"`Distance from end of Amino Acid (bp)` <= {distance}")
+    downstream_guides = downstream_guides.rename(columns={"Distance from end of Amino Acid (bp)": "Distance from Amino Acid (bp)"})
+    downstream_guides = downstream_guides.drop("Distance from start of Amino Acid (bp)", axis=1)
+    if len(downstream_guides) == 0:
+        downstream_guides = noguides
+    # make a row for the amino acid
     amino_acid = pd.DataFrame(columns=["full gRNA Sequence", "Position", "Strand", "Distance from Amino Acid (bp)", "Reverse complement", "PAM", "gRNA Sequence", "G/C Content (%)", "Notes", 'Off Target Count']) #Generate a new amino acid for the amino acid target information
     amino_acid.loc[0] = {"full gRNA Sequence": "", "Position" : "", "Strand":"","Distance from Amino Acid (bp)":"","Reverse complement": "", "PAM": "", "gRNA Sequence": selectionmade, "G/C Content (%)":"","Notes":"", 'Off Target Count': ""}#Generate a new amino acid for the amino acid target information
-
-    if not isinstance(downerguides, str):
-        downerguides = downerguides[downerguides["Distance from Amino Acid (bp)"] <= distance]
-        if len(downerguides) == 0:
-            downerguides = noguides
-        else:
-            downerguides = downerguides.sort_values(by=['Distance from Amino Acid (bp)']) #Arrange guide RNAs by their distance from the amino acid
-            downerguides['Distance from Amino Acid (bp)'] = downerguides.apply(lambda row: correct_distance(int(row['Distance from Amino Acid (bp)']),row['Strand']), axis =1) - 1
-            downerguides["Reverse complement"] = downerguides.apply(lambda row: reverse_complement(row['full gRNA Sequence']), axis =1)
-            downerguides["PAM"] = downerguides.apply(lambda row: pamcolumn(row['full gRNA Sequence'], row["Strand"], motif), axis =1)
-            downerguides["gRNA Sequence"] = downerguides.apply(lambda row: remove_pam(row['full gRNA Sequence'], row["Strand"], motif), axis =1)
-            downerguides['G/C Content (%)'] = downerguides.apply(lambda row: analyse_text(row['full gRNA Sequence']), axis =1) #Calculate GC percentage
-            downerguides["Notes"] = downerguides.apply(lambda row: notes(row["full gRNA Sequence"], row["G/C Content (%)"]), axis=1) #Output notes of key guide RNA characterstics to a new column
-            downerguides = downerguides.reset_index(drop=True)
-    else:
-        downerguides = noguides
-
-    guides = pd.concat([upperguides, amino_acid, downerguides])
+    # join the dataframes together
+    guides = pd.concat([upstream_guides, amino_acid, downstream_guides])
+    # add a progress bar
+    tqdm.pandas()
+    # get the reverse complement of the guides
+    guides["Reverse complement"] = guides.apply(lambda row: reverse_complement(row['full gRNA Sequence']) if row["full gRNA Sequence"] != "" else "", axis = 1)
+    # get the PAM of the guides
+    guides["PAM"] = guides.apply(lambda row: pamcolumn(row['full gRNA Sequence'], row['Strand'], motif) if row["full gRNA Sequence"] != "" else "", axis = 1)
+    # get the guide without the PAM
+    guides["gRNA Sequence"] = guides.apply(lambda row: remove_pam(row['full gRNA Sequence'], row['Strand'], motif) if row["full gRNA Sequence"] != "" else "", axis = 1)
+    # get the G/C content
+    guides['G/C Content (%)'] = guides.apply(lambda row: analyse_text(row['full gRNA Sequence']) if row["full gRNA Sequence"] != "" else "", axis = 1)
+    # get the notes
+    guides["Notes"] = guides.apply(lambda row: notes(row["full gRNA Sequence"], row["G/C Content (%)"]) if row["full gRNA Sequence"] != "" else "", axis=1) #Output notes of key guide RNA characterstics to a new column
+    # count the off target matches
     sys.stderr.write("\nCounting off target matches...\n")
-    ls = list(guides['full gRNA Sequence'] + guides["Reverse complement"])
+    ls = list(guides['full gRNA Sequence']) + list(guides["Reverse complement"])
     counter = list_search(ls, reference_genome)
-    guides['Off Target Count'] = guides.progress_apply(lambda row: get_count(row["full gRNA Sequence"], row["Reverse complement"], counter), axis=1)
+    guides['Off Target Count'] = guides.progress_apply(lambda row: get_count(row["full gRNA Sequence"], row["Reverse complement"], counter) if row["full gRNA Sequence"] != "" else "", axis=1)
     guides = guides[['Distance from Amino Acid (bp)', 'gRNA Sequence', 'PAM', 'Strand', 'G/C Content (%)', 'Off Target Count', 'Notes']] #Reorganise the guide RNA dataframe
-
     return guides
 
 def get_options():

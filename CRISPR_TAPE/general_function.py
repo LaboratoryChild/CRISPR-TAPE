@@ -10,7 +10,7 @@ import os
 import sys
 
 from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, \
-        pamcolumn, remove_pam, correct_distance, list_search, get_count, reverse_complement
+        pamcolumn, remove_pam, correct_distance, list_search, get_count, reverse_complement, find_sign_change
 
 def context(start_index, char_list, substring):
     # Ensure the substring consists of characters from char_list
@@ -32,10 +32,6 @@ def context(start_index, char_list, substring):
     # get the context string
     context_str = char_str[left_index: start_index] + '(' + char_str[start_index: end_index] + ')' + char_str[end_index: right_index]
     return context_str
-
-def find_sign_change(row):
-    return next((i for i, val in enumerate(row[:-1])
-            if val * row[i + 1] <= 0), None)
 
 def process_upstream_distances(distances, gRNA, motif_length):
     # Initialise the list where we are storing the selected gRNA information

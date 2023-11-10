@@ -2,7 +2,7 @@ import unittest
 import sys
 sys.path.insert(0, ".")
 
-from CRISPR_TAPE.shared_functions import translate, clean_inputs, PAMposition, get_codon_index, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count, reverse_complement
+from CRISPR_TAPE.shared_functions import translate, clean_inputs, PAMposition, get_codon_index, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count, reverse_complement, find_sign_change
 
 class TestScript(unittest.TestCase):
 
@@ -117,6 +117,30 @@ class TestScript(unittest.TestCase):
         actual_rc = reverse_complement("AGTGKNTTGGATTACGGAH")
         # assertion
         self.assertEqual(actual_rc, "HTCCGTAATCCAANKCACT")
+
+    def test_no_sign_change(self):
+        self.assertIsNone(find_sign_change([1, 2, 3, 4, 5]))
+
+    def test_sign_change_positive_to_negative(self):
+        self.assertEqual(find_sign_change([1, 2, -3, 4]), 1)
+
+    def test_sign_change_negative_to_positive(self):
+        self.assertEqual(find_sign_change([-1, -2, 3, 4]), 1)
+
+    def test_sign_change_at_end(self):
+        self.assertEqual(find_sign_change([1, 2, 3, -4]), 2)
+
+    def test_sign_change_at_beginning(self):
+        self.assertEqual(find_sign_change([-1, 2, 3, 4]), 0)
+
+    def test_empty_list(self):
+        self.assertIsNone(find_sign_change([]))
+
+    def test_single_element(self):
+        self.assertIsNone(find_sign_change([1]))
+
+    def test_zero_in_list(self):
+        self.assertEqual(find_sign_change([-1, 0, 1]), 0)
 
 if __name__ == '__main__':
     unittest.main()

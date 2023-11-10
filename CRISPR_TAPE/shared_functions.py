@@ -230,3 +230,7 @@ def reverse_complement(dna):
     complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
     comp = ''.join([complement[base] if base in complement else base for base in dna[::-1]])
     return comp
+
+def find_sign_change(row):
+    return next((i for i, val in enumerate(row[:-1])
+            if val * row[i + 1] <= 0), None)
