@@ -29,8 +29,7 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d, gf): #Function to get the
         else:
             distance = int(distance)
 
-        current_dir = "/".join(os.path.dirname(os.path.realpath(__file__)).split("/")[:-3])
-        with open(os.path.join(current_dir, genome_file), "r") as f:
+        with open(os.path.abspath(genome_file), "r") as f:
             orgen = f.read()
 
         guides = specific_function(spec_amino,
@@ -41,12 +40,16 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d, gf): #Function to get the
                             uputr,
                             downutr,
                             orgen)
-        csvfilename = str(filename + ".csv")
-        guides.to_csv(os.path.join(current_dir, csvfilename), index=False)
+        if not ".csv" in filename:
+            csvfilename = str(filename + ".csv")
+        else:
+            csvfilename = filename
+        output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), csvfilename)
+        guides.to_csv(output_path, index=False)
 
         done = Tk()
         Label(done, text='Your guide RNAs have successfully been generated.', font='Helvetica 12').grid(row=1)
-        Label(done, text='To view them, open the "' + filename + '.csv" file in the CRISPR-TAPE folder.', font='Helvetica 12').grid(row=2)
+        Label(done, text='To view them, open the "' + output_path + '.csv" file in the CRISPR-TAPE folder.', font='Helvetica 12').grid(row=2)
         done.title("**GUIDES SUCCESSFULLY GENERATED**")
         done.lift()
         done.attributes('-topmost',True)
@@ -84,8 +87,7 @@ def retrieve_gen(gen, hup, hdn, thepam, dn, fn, v, gf): #Function to get the val
         aa = str(aa)
 
         # import organism genome
-        current_dir = "/".join(os.path.dirname(os.path.realpath(__file__)).split("/")[:-3])
-        with open(os.path.join(current_dir, genome_file), "r") as f:
+        with open(os.path.abspath(genome_file), "r") as f:
             orgen = f.read()
 
         guides = general_function(aa,
@@ -95,12 +97,16 @@ def retrieve_gen(gen, hup, hdn, thepam, dn, fn, v, gf): #Function to get the val
                                 uputr,
                                 downutr,
                                 orgen)
-        csvfilename = str(filename + ".csv")
-        guides.to_csv(os.path.join(current_dir, csvfilename), index=False)
+        if not ".csv" in filename:
+            csvfilename = str(filename + ".csv")
+        else:
+            csvfilename = filename
+        output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), csvfilename)
+        guides.to_csv(output_path, index=False)
 
         done = Tk()
         Label(done, text='Your guide RNAs have successfully been generated.', font='Helvetica 12').grid(row=1)
-        Label(done, text='To view them, open the "' + filename + '.csv" file in the CRISPR-TAPE folder.', font='Helvetica 12').grid(row=2)
+        Label(done, text='To view them, open the "' + output_path + '.csv" file in the CRISPR-TAPE folder.', font='Helvetica 12').grid(row=2)
         done.title("**GUIDES SUCCESSFULLY GENERATED**")
         done.lift()
         done.attributes('-topmost',True)
