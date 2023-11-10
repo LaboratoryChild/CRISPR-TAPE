@@ -40,7 +40,7 @@ def find_sign_change(row):
     return next((i for i, val in enumerate(row[:-1])
             if val * row[i + 1] <= 0), None)
 
-def process_upstream_distances(distances, gRNA):
+def process_upstream_distances(distances, gRNA, motif_length):
     # Initialise the list where we are storing the selected gRNA information
     sequences = []
     selected_positions = []
@@ -49,7 +49,7 @@ def process_upstream_distances(distances, gRNA):
         index = find_sign_change(amino_acid_row)
         pos = None
         if index is not None and index + 1 < len(amino_acid_row):
-            pos = index if amino_acid_row[index + 1] < -2 else min(index, index + 1, key=lambda x: abs(amino_acid_row[x]))
+            pos = index if amino_acid_row[index + 1] < -1 * (motif_length - 1) else min(index, index + 1, key=lambda x: abs(amino_acid_row[x]))
         elif amino_acid_row[0] >= 0:
             pos = len(gRNA) - 1
         elif amino_acid_row[0] <= 0:
@@ -75,7 +75,7 @@ def process_upstream_distances(distances, gRNA):
         sequences.append(sequence_info)
     return sequences, selected_positions
 
-def process_downstream_distances(distances, gRNA, selected_positions):
+def process_downstream_distances(distances, gRNA, selected_positions, motif_length):
     sequences = []
     for i in range(len(distances)):
         # make a copy of the gRNA dataframe
@@ -91,7 +91,7 @@ def process_downstream_distances(distances, gRNA, selected_positions):
         pos = None
         if index is not None:
             index = index + 1
-            pos = index if row_distances[index] < -2 else min([index - 1, index], key=lambda x: abs(row_distances[x]))
+            pos = index if row_distances[index] < -1 * (motif_length - 1) else min([index - 1, index], key=lambda x: abs(row_distances[x]))
         elif row_distances[0] < 0:
             pos = len(row_gRNA) - 1
         elif row_distances[0] >= 0:
@@ -184,10 +184,12 @@ def general_function(motif,
     # make a matrix of the distance of all gRNA cut sites from all stop bases
     # -1 in this matrix means that the cut is to the left of the start base, relative to the strand of the inputted genomic loci
     stop_distances = make_distance_matrix(stop_base, gRNA['Position'])
+    # get the length of the motif in base pairs
+    motif_length = len(motif) * 3
     # choose the closest upstream gRNA for each amino acid of interest
-    upstream_sequences, selected_positions = process_upstream_distances(start_distances.tolist(), gRNA)
+    upstream_sequences, selected_positions = process_upstream_distances(start_distances.tolist(), gRNA, motif_length)
     # choose the closest downstream gRNA for each amino acid of interest
-    downstream_sequences = process_downstream_distances(stop_distances.tolist(), gRNA, selected_positions)
+    downstream_sequences = process_downstream_distances(stop_distances.tolist(), gRNA, selected_positions, motif_length)
     # initialise the guide dataframe
     guides = pd.DataFrame(amino_position, columns=['Amino Acid Position'])
     # get the context of each amino acid
