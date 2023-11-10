@@ -12,7 +12,7 @@ with open("requirements.txt", "r") as fh:
 
 setuptools.setup(
     name="CRISPR-TAPE",
-    version="1.0.5",
+    version="1.0.6",
     author="Daniel Anderson",
     author_email="danielanderson1@hotmail.com",
     license= "Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International Public License",

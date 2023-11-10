@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import sys
 from tkinter import *
+from tkinter import filedialog
 
 multiprocessing.freeze_support()
 
@@ -20,7 +21,6 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d, gf): #Function to get the
         coding_seq = str(coding_seq)
         filename = fn.get()
         filename = str(filename)
-        genome_file = gf.get()
         spec_amino = a.get()
         spec_amino = int(spec_amino)
         distance = d.get()
@@ -29,7 +29,7 @@ def retrieve_spec(gen, hup, hdn, thepam, dn, fn, a, d, gf): #Function to get the
         else:
             distance = int(distance)
 
-        with open(os.path.abspath(genome_file), "r") as f:
+        with open(genome_file, "r") as f:
             reference_genome = f.read()
 
         guides = specific_function(spec_amino,
@@ -82,12 +82,11 @@ def retrieve_gen(gen, hup, hdn, thepam, dn, fn, v, gf): #Function to get the val
         coding_seq = str(coding_seq)
         filename = fn.get()
         filename = str(filename)
-        genome_file = gf.get()
         aa = v.get()
         aa = str(aa)
 
         # import organism genome
-        with open(os.path.abspath(genome_file), "r") as f:
+        with open(genome_file, "r") as f:
             reference_genome = f.read()
 
         guides = general_function(aa,
@@ -156,19 +155,22 @@ def OnFocusIn(event):
     if type(event.widget).__name__ == 'Tk':
         event.widget.attributes('-topmost', False)
 
+def UploadAction(event=None):
+    global genome_file
+    genome_file = filedialog.askopenfilename()
+
 def main():
     self = Tk()
     Label(self, text="Welcome to CRISPR-TAPE, a CRISPR gRNA design tool for Targeted Protein Engineering. CRISPR-TAPE is a python-", font='Helvetica 12').grid(row=0, columnspan = 2, sticky=W)
     Label(self, text="based programme that outputs gRNAs designed to target Cas9 to specified residues or amino acid types.", font='Helvetica 12').grid(row=1, columnspan = 2, sticky=W)
     Button(self, text="INSTRUCTIONS", command = lambda: instructions()).grid(row=2, sticky=W)
-
     Label(self, text="").grid(row=3)
     Label(self, text="Name of guide output file (no spaces):" , font='Helvetica 12 bold').grid(row=4, sticky = W)
     Label(self, text="Genome assembly file of the organism of interest:" , font='Helvetica 12 bold').grid(row=5, sticky = W)
     fn = StringVar()
     Entry(self, textvariable = fn).grid(row=4, column=1, sticky=W)
     gf = StringVar()
-    Entry(self, textvariable = gf).grid(row=5, column=1, sticky=W)
+    Button(self, text='Open', command=UploadAction).grid(row=5, column=1, sticky=W)
     Label(self, text="Please input the genomic loci sequence of your protein here:", font='Helvetica 12 bold').grid(row=6, column = 0, sticky=W)
     Label(self, text="(UTRs and introns lowercase, exons uppercase)", font='Helvetica 12').grid(row=7, column = 0, sticky=W)
     Label(self, text="", font='Helvetica 12 bold').grid(row=8, column = 0, sticky=W)
