@@ -11,11 +11,6 @@ import os
 
 from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, list_search, get_count, reverse_complement, find_sign_change
 
-def get_upstream_gRNA_dataframe(gRNA):
-    # get the guides that are upstream of the amino acid of interest
-    upstream_guides = gRNA.query("`Distance from start of Amino Acid (bp)` < 3")
-    return upstream_guides
-
 def specific_function(spec_amino,
                     distance,
                     motif,
