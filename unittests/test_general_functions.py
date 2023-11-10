@@ -130,7 +130,6 @@ class TestScriptFunctions(unittest.TestCase):
         self.assertEqual(len(actual_guides), 3)
         self.assertEqual(list(actual_guides["Amino Acid Position"]), [5, 9, 11])
         self.assertEqual(list(actual_guides["Context"]), ["SE(L)QR", "RQ(L)AL", "LA(L)HR"])
-        actual_guides.to_csv("unittest_guide.csv")
         # test the 5' guides
         self.assertEqual(list(actual_guides["5' gRNA Sequence"]), ["AACCAGCTGGCGCTGCAGCT",
                                                                 "CTCCGAGCTGCAGCGCCAGC",
@@ -150,7 +149,119 @@ class TestScriptFunctions(unittest.TestCase):
         self.assertEqual(list(actual_guides["Distance of 3' Cut Site from Amino Acid (bp)"]), [7, 0, 0])
         self.assertEqual(list(actual_guides["3' gRNA G/C Content (%)"]), [73.91, 65.22, 65.22])
         self.assertEqual(list(actual_guides["3' Notes"]), ["No leading G.", "No leading G.", "No leading G."])
-        self.assertEqual(list(actual_guides["3' gRNA Off Target Count"]), [1, 0, 1])
+        self.assertEqual(list(actual_guides["3' gRNA Off Target Count"]), [0, 0, 1])
+
+    def test_general_function_multi_aa_NGG(self):
+        # setup
+        motif = "RQLAL"
+        PAM = "NGG"
+        DNA = "aaaatgttggATGGTCTCCGAGCTGCAGCGCCAGCTGGtttggggccctttCGCTGCATCGGCAGACCCGCGGTGTAGGGTCTTCGTCGACTGCTTCGTGCTCAaaatttagg"
+        CDS = "ATGGTCTCCGAGCTGCAGCGCCAGCTGGCGCTGCATCGGCAGACCCGCGGTGTAGGGTCTTCGTCGACTGCTTCGTGCTCA"
+        reference_genome = "AAAATGTTGGATGGTCTCCGAGCTGCAGCGCCAGCTGGTTTGGGGCCCTTTCGCTGCATCGGCAGACCCGCGGTGTAGGGTCTTCGTCGACTGCTTCGTGCTCAAAATTTAGGAACCAGCTGGCGCTGCAGCTCGGCCGATGCAGCGAAAGGGCCCCAA"
+        # execution
+        actual_guide_positions, actual_gRNA_list, actual_guide_strands = PAMposition(DNA.upper(), PAM)
+        actual_guides = general_function(motif,
+                                    PAM,
+                                    DNA,
+                                    CDS,
+                                    "",
+                                    "",
+                                    reference_genome)
+        actual_guides.to_csv("out.csv")
+        # assertion
+        expected_gRNA_list = ["CTCCGAGCTGCAGCGCCAGCTGG",
+                        "AGCTGCAGCGCCAGCTGGTTTGG",
+                        "GCTGCAGCGCCAGCTGGTTTGGG",
+                        "CTGCAGCGCCAGCTGGTTTGGGG",
+                        "TTGGGGCCCTTTCGCTGCATCGG",
+                        "TCGCTGCATCGGCAGACCCGCGG",
+                        "CATCGGCAGACCCGCGGTGTAGG",
+                        "ATCGGCAGACCCGCGGTGTAGGG",
+                        "CTGCTTCGTGCTCAAAATTTAGG",
+                        "AACCAGCTGGCGCTGCAGCTCGG",
+                        "CGAAAGGGCCCCAAACCAGCTGG",
+                        "GGTCTGCCGATGCAGCGAAAGGG",
+                        "GGGTCTGCCGATGCAGCGAAAGG",
+                        "CGACGAAGACCCTACACCGCGGG",
+                        "TCGACGAAGACCCTACACCGCGG"]
+        self.assertEqual(len(actual_gRNA_list), len(expected_gRNA_list))
+        self.assertTrue(all(g in expected_gRNA_list for g in actual_gRNA_list) and all(g in actual_gRNA_list for g in expected_gRNA_list))
+        self.assertEqual(len(actual_guides), 1)
+        actual_guides.to_csv("unittest_guide.csv")
+        self.assertEqual(list(actual_guides["Amino Acid Position"]),  [7])
+        self.assertEqual(list(actual_guides["Context"]), ["LQ(RQLAL)HR"])
+        # test the 5' guides
+        self.assertEqual(list(actual_guides["5' gRNA Sequence"]), ["CTCCGAGCTGCAGCGCCAGC"])
+        self.assertEqual(list(actual_guides["5' PAM"]), ["TGG"])
+        self.assertEqual(list(actual_guides["5' gRNA Strand"]), ["forward"])
+        self.assertEqual(list(actual_guides["Distance of 5' Cut Site from Amino Acid (bp)"]), [-4])
+        self.assertEqual(list(actual_guides["5' gRNA G/C Content (%)"]), [73.91])
+        self.assertEqual(list(actual_guides["5' Notes"]), ["No leading G."])
+        self.assertEqual(list(actual_guides["5' gRNA Off Target Count"]), [0])
+        # test the 3' guides"
+        self.assertEqual(list(actual_guides["3' gRNA Sequence"]), ["TTGGGGCCCTTTCGCTGCAT"])
+        self.assertEqual(list(actual_guides["3' PAM"]), ["CGG"])
+        self.assertEqual(list(actual_guides["3' gRNA Strand"]), ["forward"])
+        self.assertEqual(list(actual_guides["Distance of 3' Cut Site from Amino Acid (bp)"]), [0])
+        self.assertEqual(list(actual_guides["3' gRNA G/C Content (%)"]), [65.22])
+        self.assertEqual(list(actual_guides["3' Notes"]), ["No leading G."])
+        self.assertEqual(list(actual_guides["3' gRNA Off Target Count"]), [1])
+
+    def test_general_function_multi_aa_NGG_ambiguous_aa(self):
+        # setup
+        motif = "RQL*L"
+        PAM = "NGG"
+        DNA = "aaaatgttggATGGTCTCCGAGCTGCAGCGCCAGCTGGtttggggccctttCGCTGCATCGGCAGACCCGCGGTGTAGGGTCTTCGTCGACTGCTTCGTGCTCAaaatttagg"
+        CDS = "ATGGTCTCCGAGCTGCAGCGCCAGCTGGCGCTGCATCGGCAGACCCGCGGTGTAGGGTCTTCGTCGACTGCTTCGTGCTCA"
+        reference_genome = "AAAATGTTGGATGGTCTCCGAGCTGCAGCGCCAGCTGGTTTGGGGCCCTTTCGCTGCATCGGCAGACCCGCGGTGTAGGGTCTTCGTCGACTGCTTCGTGCTCAAAATTTAGGAACCAGCTGGCGCTGCAGCTCGGCCGATGCAGCGAAAGGGCCCCAA"
+        # execution
+        actual_guide_positions, actual_gRNA_list, actual_guide_strands = PAMposition(DNA.upper(), PAM)
+        actual_guides = general_function(motif,
+                                    PAM,
+                                    DNA,
+                                    CDS,
+                                    "",
+                                    "",
+                                    reference_genome)
+        actual_guides.to_csv("out.csv")
+        # assertion
+        expected_gRNA_list = ["CTCCGAGCTGCAGCGCCAGCTGG",
+                        "AGCTGCAGCGCCAGCTGGTTTGG",
+                        "GCTGCAGCGCCAGCTGGTTTGGG",
+                        "CTGCAGCGCCAGCTGGTTTGGGG",
+                        "TTGGGGCCCTTTCGCTGCATCGG",
+                        "TCGCTGCATCGGCAGACCCGCGG",
+                        "CATCGGCAGACCCGCGGTGTAGG",
+                        "ATCGGCAGACCCGCGGTGTAGGG",
+                        "CTGCTTCGTGCTCAAAATTTAGG",
+                        "AACCAGCTGGCGCTGCAGCTCGG",
+                        "CGAAAGGGCCCCAAACCAGCTGG",
+                        "GGTCTGCCGATGCAGCGAAAGGG",
+                        "GGGTCTGCCGATGCAGCGAAAGG",
+                        "CGACGAAGACCCTACACCGCGGG",
+                        "TCGACGAAGACCCTACACCGCGG"]
+        self.assertEqual(len(actual_gRNA_list), len(expected_gRNA_list))
+        self.assertTrue(all(g in expected_gRNA_list for g in actual_gRNA_list) and all(g in actual_gRNA_list for g in expected_gRNA_list))
+        self.assertEqual(len(actual_guides), 1)
+        actual_guides.to_csv("unittest_guide.csv")
+        self.assertEqual(list(actual_guides["Amino Acid Position"]),  [7])
+        self.assertEqual(list(actual_guides["Context"]), ["LQ(RQLAL)HR"])
+        # test the 5' guides
+        self.assertEqual(list(actual_guides["5' gRNA Sequence"]), ["CTCCGAGCTGCAGCGCCAGC"])
+        self.assertEqual(list(actual_guides["5' PAM"]), ["TGG"])
+        self.assertEqual(list(actual_guides["5' gRNA Strand"]), ["forward"])
+        self.assertEqual(list(actual_guides["Distance of 5' Cut Site from Amino Acid (bp)"]), [-4])
+        self.assertEqual(list(actual_guides["5' gRNA G/C Content (%)"]), [73.91])
+        self.assertEqual(list(actual_guides["5' Notes"]), ["No leading G."])
+        self.assertEqual(list(actual_guides["5' gRNA Off Target Count"]), [0])
+        # test the 3' guides"
+        self.assertEqual(list(actual_guides["3' gRNA Sequence"]), ["TTGGGGCCCTTTCGCTGCAT"])
+        self.assertEqual(list(actual_guides["3' PAM"]), ["CGG"])
+        self.assertEqual(list(actual_guides["3' gRNA Strand"]), ["forward"])
+        self.assertEqual(list(actual_guides["Distance of 3' Cut Site from Amino Acid (bp)"]), [0])
+        self.assertEqual(list(actual_guides["3' gRNA G/C Content (%)"]), [65.22])
+        self.assertEqual(list(actual_guides["3' Notes"]), ["No leading G."])
+        self.assertEqual(list(actual_guides["3' gRNA Off Target Count"]), [1])
 
 if __name__ == "__main__":
     unittest.main()
