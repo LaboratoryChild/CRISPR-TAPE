@@ -32,7 +32,7 @@ def build_executable(script_dir, icon_path):
     icon_path: The path to the icon file.
     """
     # Prepare the PyInstaller command
-    pyinstaller_command = f'pyinstaller --onefile --paths venv/lib/site-packages --icon={icon_path} -p . '
+    pyinstaller_command = f'pyinstaller -w --onefile --paths venv/lib/site-packages --icon={icon_path} -p . '
     pyinstaller_command += f'-n CRISPR-TAPE {os.path.join(script_dir, "__main__.py")} {os.path.join(script_dir, "general_function.py")} '
     pyinstaller_command += f'{os.path.join(script_dir, "shared_functions.py")} {os.path.join(script_dir, "specific_function.py")} {os.path.join(script_dir, "__init__.py")}'
     # Use PyInstaller to build the executable
