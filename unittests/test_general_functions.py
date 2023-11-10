@@ -108,6 +108,7 @@ class TestScriptFunctions(unittest.TestCase):
                                     "",
                                     "",
                                     reference_genome)
+        actual_guides.to_csv("out.csv")
         # assertion
         expected_gRNA_list = ["CTCCGAGCTGCAGCGCCAGCTGG",
                         "AGCTGCAGCGCCAGCTGGTTTGG",

@@ -10,11 +10,7 @@ from tqdm import tqdm
 import sys
 import os
 
-from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count
-
-def reverse_complement(dna):
-    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
-    return ''.join([complement[base] for base in dna[::-1]])
+from CRISPR_TAPE.shared_functions import clean_inputs, get_codon_index, PAMposition, analyse_text, notes, pamcolumn, remove_pam, correct_distance, list_search, get_count, reverse_complement
 
 def off_target(search, reverse_search, reference_genome):
     if not search == "":

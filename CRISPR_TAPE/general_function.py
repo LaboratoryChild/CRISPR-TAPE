@@ -52,7 +52,7 @@ def process_upstream_distances(distances, gRNA):
             pos = index if amino_acid_row[index + 1] < -2 else min(index, index + 1, key=lambda x: abs(amino_acid_row[x]))
         elif amino_acid_row[0] >= 0:
             pos = len(gRNA) - 1
-        elif amino_acid_row[0] <= 0:
+        elif -3 < amino_acid_row[0] <= 0:
             pos = 0
         if pos is not None:
             sequence_info = {
@@ -92,7 +92,7 @@ def process_downstream_distances(distances, gRNA, selected_positions):
         if index is not None:
             index = index + 1
             pos = index if row_distances[index] < -2 else min([index - 1, index], key=lambda x: abs(row_distances[x]))
-        elif row_distances[0] < 0:
+        elif -3 < row_distances[0] < 0:
             pos = len(row_gRNA) - 1
         elif row_distances[0] >= 0:
             pos = 0
