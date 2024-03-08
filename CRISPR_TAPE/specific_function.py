@@ -68,7 +68,7 @@ def specific_function(spec_amino,
     amino_acid = pd.DataFrame(columns=["full gRNA Sequence", "Position", "Strand", "Distance from Amino Acid (bp)", "Reverse complement", "PAM", "gRNA Sequence", "G/C Content (%)", "Notes", 'Off Target Count']) #Generate a new amino acid for the amino acid target information
     amino_acid.loc[0] = {"full gRNA Sequence": "", "Position" : "", "Strand":"","Distance from Amino Acid (bp)":"","Reverse complement": "", "PAM": "", "gRNA Sequence": selectionmade, "G/C Content (%)":"","Notes":"", 'Off Target Count': ""}#Generate a new amino acid for the amino acid target information
     # join the dataframes together
-    guides = pd.concat([upstream_guides, amino_acid, downstream_guides])
+    guides = pd.concat([upstream_guides, amino_acid, downstream_guides]).reset_index(drop=True)
     # add a progress bar
     tqdm.pandas()
     # get the reverse complement of the guides
